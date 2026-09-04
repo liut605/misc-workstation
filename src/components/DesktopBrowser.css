@@ -10,7 +10,7 @@
   width: 100%;
   height: 100%;
   display: grid;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: auto 1fr;
   background: #fff;
 }
 
@@ -21,6 +21,7 @@
   padding: 8px 8px 0 10px;
   background: linear-gradient(180deg, #f4f4f6, #e8e8ec);
   min-height: 44px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .tab-strip {
@@ -105,65 +106,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.browser-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  background: #fff;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.nav-btns {
-  display: flex;
-  gap: 6px;
-  color: #aaa;
-  font-size: 18px;
-  line-height: 1;
-}
-
-.url-bar {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  height: 30px;
-  padding: 0 12px;
-  border-radius: 999px;
-  background: #f2f2f4;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  font-size: 12px;
-  color: #444;
-}
-
-.lock {
-  width: 8px;
-  height: 10px;
-  border: 1.5px solid #888;
-  border-radius: 2px 2px 1px 1px;
-  position: relative;
-  flex-shrink: 0;
-}
-
-.lock::before {
-  content: '';
-  position: absolute;
-  left: 1px;
-  top: -5px;
-  width: 4px;
-  height: 5px;
-  border: 1.5px solid #888;
-  border-bottom: 0;
-  border-radius: 4px 4px 0 0;
-}
-
-.url-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .browser-content {

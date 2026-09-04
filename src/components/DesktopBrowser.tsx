@@ -63,17 +63,6 @@ export function DesktopBrowser({ active, onExit }: DesktopBrowserProps) {
           </button>
         </div>
 
-        <div className="browser-toolbar">
-          <div className="nav-btns" aria-hidden="true">
-            <span className="nav-chevron">‹</span>
-            <span className="nav-chevron">›</span>
-          </div>
-          <div className="url-bar">
-            <span className="lock" aria-hidden="true" />
-            <span className="url-text">{activeTab.url ?? 'about:blank'}</span>
-          </div>
-        </div>
-
         <div className="browser-content">
           {activeTab.url ? (
             <iframe
