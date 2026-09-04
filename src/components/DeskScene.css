@@ -9,7 +9,7 @@
 }
 
 .desk-view.is-zoomed {
-  background: #111;
+  background: #1a1a1a;
 }
 
 .desk-stage {
@@ -36,11 +36,12 @@
 
 .screen-idle {
   position: absolute;
-  object-fit: cover;
-  object-position: top left;
+  object-fit: fill;
   pointer-events: none;
-  transition: opacity 0.25s ease;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+  transition: opacity 0.2s ease;
+  border: 0;
+  box-shadow: none;
+  outline: none;
 }
 
 .screen-hotspot {
@@ -49,7 +50,7 @@
   padding: 0;
   background: transparent;
   cursor: zoom-in;
-  border-radius: 2px;
+  border-radius: 0;
 }
 
 .screen-hotspot:disabled {
@@ -58,9 +59,8 @@
 
 .screen-hotspot:not(:disabled):hover,
 .screen-hotspot:not(:disabled):focus-visible {
-  outline: 2px solid rgba(47, 107, 79, 0.85);
-  outline-offset: 2px;
-  background: rgba(255, 255, 255, 0.06);
+  outline: none;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .desk-back {
@@ -81,7 +81,7 @@
   position: absolute;
   left: 50%;
   bottom: 18px;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateY(6px);
   margin: 0;
   padding: 8px 14px;
   border-radius: 999px;
@@ -90,6 +90,14 @@
   font-size: 13px;
   letter-spacing: 0.01em;
   white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.desk-hint.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 @media (max-width: 720px) {

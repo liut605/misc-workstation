@@ -94,23 +94,21 @@ def detect_screen(img: Image.Image) -> tuple[int, int, int, int]:
     return left, top, right - left, bottom - top
 
 
-def compose_browser_idle(out_path: Path, content_path: Path) -> None:
-    """Compose idle monitor art: tabs + close only (no traffic lights / URL bar)."""
+def compose_browser_idle(
+    out_path: Path,
+    content_path: Path,
+    screen_w: int = 831,
+    screen_h: int = 461,
+) -> None:
+    """Idle monitor art at exact screen aspect: tabs + close, full page, no letterbox border."""
     content = Image.open(content_path).convert("RGB")
-    cw, ch = content.size
-    tab_h = 44
-    win_w = 1400
-    scale = win_w / cw
-    content_h = int(ch * scale)
-    content_resized = content.resize((win_w, content_h), Image.Resampling.LANCZOS)
-    win_h = tab_h + content_h
-
-    img = Image.new("RGB", (win_w, win_h), (236, 236, 239))
+    tab_h = 40
+    img = Image.new("RGB", (screen_w, screen_h), (245, 245, 247))
     draw = ImageDraw.Draw(img)
-    draw.rectangle([0, 0, win_w, tab_h], fill=(240, 240, 243))
+    draw.rectangle([0, 0, screen_w, tab_h], fill=(240, 240, 243))
 
     try:
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 13)
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 11)
     except Exception:
         font = ImageFont.load_default()
 
@@ -120,28 +118,39 @@ def compose_browser_idle(out_path: Path, content_path: Path) -> None:
         ("Studio Notes", False),
         ("New Tab", False),
     ]
-    tx = 12
+    tx = 8
     for label, active in tabs:
-        tw = max(110, int(draw.textlength(label, font=font) + 28))
-        y0 = 10
+        tw = max(88, int(draw.textlength(label, font=font) + 20))
+        if tx + tw > screen_w - 36:
+            break
+        y0 = 8
         fill = (255, 255, 255) if active else (228, 228, 232)
-        draw.rounded_rectangle([tx, y0, tx + tw, tab_h], radius=8, fill=fill)
+        draw.rounded_rectangle([tx, y0, tx + tw, tab_h], radius=6, fill=fill)
         draw.text(
-            (tx + 14, y0 + 9),
+            (tx + 10, y0 + 8),
             label,
             fill=(29, 29, 31) if active else (107, 107, 112),
             font=font,
         )
-        tx += tw + 4
+        tx += tw + 3
 
-    # Close X (top-right), matching live DesktopBrowser chrome
-    cx, cy = win_w - 24, 22
-    draw.line([(cx - 6, cy - 6), (cx + 6, cy + 6)], fill=(92, 92, 98), width=2)
-    draw.line([(cx + 6, cy - 6), (cx - 6, cy + 6)], fill=(92, 92, 98), width=2)
-    draw.line([(0, tab_h - 1), (win_w, tab_h - 1)], fill=(220, 220, 224), width=1)
+    cx, cy = screen_w - 16, 20
+    draw.line([(cx - 5, cy - 5), (cx + 5, cy + 5)], fill=(92, 92, 98), width=2)
+    draw.line([(cx + 5, cy - 5), (cx - 5, cy + 5)], fill=(92, 92, 98), width=2)
 
-    img.paste(content_resized, (0, tab_h))
-    img.save(out_path, quality=92, optimize=True)
+    cw, ch = content.size
+    area_w, area_h = screen_w, screen_h - tab_h
+    scale = area_w / cw
+    nw, nh = area_w, int(ch * scale)
+    resized = content.resize((nw, nh), Image.Resampling.LANCZOS)
+    if nh >= area_h:
+        top_crop = nh - area_h
+        img.paste(resized.crop((0, top_crop, nw, nh)), (0, tab_h))
+    else:
+        draw.rectangle([0, tab_h, screen_w, screen_h], fill=(236, 242, 236))
+        img.paste(resized, (0, tab_h + (area_h - nh)))
+
+    img.save(out_path, quality=94, optimize=True)
     print(f"wrote {out_path} size={img.size}")
 
 
@@ -166,13 +175,7 @@ def main() -> None:
     crop.save(SCREEN_CROP, quality=95)
     print(f"wrote {SCREEN_CROP}")
 
-    # Prefer generated artifact if present, else compose
-    gen = Path("/opt/cursor/artifacts/assets/browser-idle-screenshot.jpg")
-    if gen.exists():
-        shutil.copy2(gen, BROWSER_IDLE)
-        print(f"copied generated browser idle -> {BROWSER_IDLE}")
-    else:
-        compose_browser_idle(BROWSER_IDLE, ROOTED)
+    compose_browser_idle(BROWSER_IDLE, ROOTED, screen_w=width, screen_h=height)
 
     for p in [
         PUBLIC / "desk-final.jpg",
