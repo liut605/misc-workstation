@@ -1,15 +1,20 @@
 .desk-view {
   position: relative;
-  min-height: 100dvh;
+  width: 100vw;
+  height: 100dvh;
   display: grid;
   place-items: center;
   overflow: hidden;
   background: #d9cfc3;
 }
 
+.desk-view.is-zoomed {
+  background: #111;
+}
+
 .desk-stage {
-  width: min(1280px, 100vw);
-  height: min(100dvh, 860px);
+  width: 100vw;
+  height: 100dvh;
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -17,7 +22,7 @@
 
 .desk-scene {
   position: relative;
-  width: min(1280px, 100vw);
+  width: min(100vw, calc(100dvh * 2528 / 1686));
   will-change: transform;
 }
 
@@ -88,10 +93,6 @@
 }
 
 @media (max-width: 720px) {
-  .desk-stage {
-    height: 100dvh;
-  }
-
   .desk-hint {
     font-size: 12px;
     bottom: 12px;

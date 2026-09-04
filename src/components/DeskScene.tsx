@@ -23,11 +23,14 @@ export function DeskScene({ mode, onOpenDesktop, onBackHome }: DeskSceneProps) {
     scene.style.transformOrigin = `${screenCx}% ${screenCy}%`
 
     const fitScale = () => {
-      const stageBox = stage.getBoundingClientRect()
-      const naturalW = scene.offsetWidth || stageBox.width
+      // Scale so the monitor screen covers the full viewport (cover, not contain).
+      const naturalW = scene.offsetWidth
+      const naturalH = scene.offsetHeight
       const screenW = naturalW * SCREEN_RECT.width
-      // Fill viewport width with the screen; clamp so mobile still zooms in
-      return Math.min(Math.max(stageBox.width / screenW, 2.2), 4.2)
+      const screenH = naturalH * SCREEN_RECT.height
+      const scaleX = window.innerWidth / screenW
+      const scaleY = window.innerHeight / screenH
+      return Math.max(scaleX, scaleY) * 1.02
     }
 
     if (mode === 'room') {
@@ -49,12 +52,15 @@ export function DeskScene({ mode, onOpenDesktop, onBackHome }: DeskSceneProps) {
   }, [mode])
 
   const interactive = mode === 'room'
+  const showChrome = mode === 'room'
 
   return (
-    <div className="desk-view">
-      <button type="button" className="desk-back" onClick={onBackHome}>
-        ← Home
-      </button>
+    <div className={`desk-view ${mode !== 'room' ? 'is-zoomed' : ''}`}>
+      {showChrome && (
+        <button type="button" className="desk-back" onClick={onBackHome}>
+          ← Home
+        </button>
+      )}
 
       <div ref={stageRef} className="desk-stage">
         <div ref={sceneRef} className="desk-scene">
@@ -93,7 +99,7 @@ export function DeskScene({ mode, onOpenDesktop, onBackHome }: DeskSceneProps) {
         </div>
       </div>
 
-      {mode === 'room' && (
+      {showChrome && (
         <p className="desk-hint">Click the monitor to open the desktop</p>
       )}
     </div>
