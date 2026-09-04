@@ -19,7 +19,7 @@ function rectStyle(r: { left: number; top: number; width: number; height: number
 export function SketchbookPages({ active }: SketchbookPagesProps) {
   const [index, setIndex] = useState(0)
   const [busy, setBusy] = useState(false)
-  const [radiusPx, setRadiusPx] = useState(28)
+  const [radiusPx, setRadiusPx] = useState(0)
   const leafRef = useRef<HTMLDivElement>(null)
   const measureRef = useRef<HTMLDivElement>(null)
 

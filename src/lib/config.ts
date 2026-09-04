@@ -54,22 +54,22 @@ export const SKETCHBOOK = {
   pageRect: {
     left: 0.20130813953488372,
     top: 0.11458333333333333,
-    width: 0.590843023255814,
-    height: 0.76953125,
+    width: 0.5915697674418605,
+    height: 0.7708333333333334,
   },
   leftPage: {
     left: 0.20130813953488372,
     top: 0.11458333333333333,
-    width: 0.2761627906976744,
-    height: 0.76953125,
+    width: 0.2768895348837209,
+    height: 0.7708333333333334,
   },
   rightPage: {
-    left: 0.4789244186046512,
+    left: 0.4796511627906977,
     top: 0.11458333333333333,
     width: 0.3132267441860465,
-    height: 0.76953125,
+    height: 0.7708333333333334,
   },
-  /** 0 = sharp corners (matches this overhead still). */
+  /** 0 = sharp corners (this overhead has square page corners). */
   pageRadiusRatio: 0,
   spreads: [
     {
