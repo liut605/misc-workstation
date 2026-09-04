@@ -1,7 +1,10 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import gsap from 'gsap'
 import { SCREEN_RECT } from '../lib/config'
 import './DeskScene.css'
+
+/** Native desk photo dimensions */
+const IMG_W = 2528
+const IMG_H = 1686
 
 type ScreenRect = { top: number; left: number; width: number; height: number }
 
@@ -11,8 +14,26 @@ type DeskSceneProps = {
   onBackHome: () => void
 }
 
+function coverLayout(vw: number, vh: number) {
+  // Scale to cover the viewport fully.
+  const scale = Math.max(vw / IMG_W, vh / IMG_H)
+  const width = IMG_W * scale
+  const height = IMG_H * scale
+
+  // First pass: pin to the top, crop the bottom (and center horizontally).
+  let top = 0
+  const left = (vw - width) / 2
+
+  // Last resort: if anything still short of full height (shouldn't happen with
+  // cover), shift upward so we crop the top instead of leaving a gap.
+  if (top + height < vh) {
+    top = vh - height
+  }
+
+  return { width, height, top, left }
+}
+
 export function DeskScene({ mode, onOpenDesktop, onBackHome }: DeskSceneProps) {
-  const stageRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<HTMLDivElement>(null)
   const hotspotRef = useRef<HTMLButtonElement>(null)
   const [hintVisible, setHintVisible] = useState(false)
@@ -21,11 +42,21 @@ export function DeskScene({ mode, onOpenDesktop, onBackHome }: DeskSceneProps) {
     const scene = sceneRef.current
     if (!scene) return
 
-    // Room stays still; zoom is handled by the morph overlay in App.
-    if (mode === 'room') {
-      gsap.set(scene, { scale: 1, xPercent: 0, yPercent: 0 })
+    const apply = () => {
+      const { width, height, top, left } = coverLayout(
+        window.innerWidth,
+        window.innerHeight,
+      )
+      scene.style.width = `${width}px`
+      scene.style.height = `${height}px`
+      scene.style.top = `${top}px`
+      scene.style.left = `${left}px`
     }
-  }, [mode])
+
+    apply()
+    window.addEventListener('resize', apply)
+    return () => window.removeEventListener('resize', apply)
+  }, [])
 
   const interactive = mode === 'room'
   const showChrome = mode === 'room'
@@ -38,7 +69,7 @@ export function DeskScene({ mode, onOpenDesktop, onBackHome }: DeskSceneProps) {
         </button>
       )}
 
-      <div ref={stageRef} className="desk-stage">
+      <div className="desk-stage">
         <div ref={sceneRef} className="desk-scene">
           <img
             className="desk-photo"
