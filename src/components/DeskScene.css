@@ -1,0 +1,99 @@
+.desk-view {
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #d9cfc3;
+}
+
+.desk-stage {
+  width: min(1280px, 100vw);
+  height: min(100dvh, 860px);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.desk-scene {
+  position: relative;
+  width: min(1280px, 100vw);
+  will-change: transform;
+}
+
+.desk-photo {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.screen-idle {
+  position: absolute;
+  object-fit: cover;
+  object-position: top left;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.screen-hotspot {
+  position: absolute;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: zoom-in;
+  border-radius: 2px;
+}
+
+.screen-hotspot:disabled {
+  cursor: default;
+}
+
+.screen-hotspot:not(:disabled):hover,
+.screen-hotspot:not(:disabled):focus-visible {
+  outline: 2px solid rgba(47, 107, 79, 0.85);
+  outline-offset: 2px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.desk-back {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 5;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: rgba(255, 250, 244, 0.88);
+  color: #1c1916;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(28, 25, 22, 0.12);
+}
+
+.desk-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(28, 25, 22, 0.72);
+  color: #f7f0e8;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .desk-stage {
+    height: 100dvh;
+  }
+
+  .desk-hint {
+    font-size: 12px;
+    bottom: 12px;
+  }
+}

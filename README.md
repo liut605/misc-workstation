@@ -1,32 +1,33 @@
-# React + TypeScript + Vite
+# Misc Workstation Prototype
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Interactive desk experience for Tsing Liu’s portfolio Misc page.
 
-Currently, two official plugins are available:
+## What this prototype covers (V1)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. **Home → Misc entry** — hover Misc to preview the desk still; click expands full-screen into the workstation.
+2. **Desk room** — final desk photograph with the monitor showing a browser screenshot (Rooted NYC tabs UI).
+3. **Zoom into desktop** — opens a desktop mockup with a browser:
+   - **Rooted NYC** → live iframe at `https://rooted-nyc.tsingliu.info/`
+   - **String of Pearls** + other tabs → placeholders until URLs are ready
+4. Sketchbook and wall frames are **out of scope** for this pass.
 
-## React Compiler
+## Run locally
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Dev server: [http://127.0.0.1:43123](http://127.0.0.1:43123)
+
+## Key files
+
+- `public/desk-final.jpg` — room still
+- `public/browser-idle-screenshot.jpg` — distant monitor content
+- `src/lib/config.ts` — screen hotspot rect + tab URLs
+- `src/components/DeskScene.tsx` — room + zoom
+- `src/components/DesktopBrowser.tsx` — OS/browser chrome + iframe
+
+## Webflow next step
+
+Port this flow onto `tsingliu.info` Home Misc hover and `/work/misc` (or a dedicated static page), reusing the same assets and GSAP state machine via custom code / hosted embed.

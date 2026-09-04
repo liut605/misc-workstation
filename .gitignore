@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+agent-tools/
+assets/c4dac523*
+assets/cbb13a50*
