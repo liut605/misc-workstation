@@ -18,8 +18,8 @@ export function DesktopBrowser({ active, onExit }: DesktopBrowserProps) {
     if (!shellRef.current) return
     gsap.to(shellRef.current, {
       opacity: active ? 1 : 0,
-      duration: active ? 0.45 : 0.3,
-      ease: 'power1.inOut',
+      duration: active ? 0.2 : 0.15,
+      ease: 'power1.out',
       pointerEvents: active ? 'auto' : 'none',
     })
   }, [active])

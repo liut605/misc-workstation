@@ -1,10 +1,9 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { SCREEN_RECT } from '../lib/config'
+import { DESK_IMAGE, SCREEN_RECT } from '../lib/config'
 import './DeskScene.css'
 
-/** Native desk photo dimensions */
-const IMG_W = 2528
-const IMG_H = 1686
+const IMG_W = DESK_IMAGE.width
+const IMG_H = DESK_IMAGE.height
 const IMG_ASPECT = IMG_W / IMG_H
 
 type ScreenRect = { top: number; left: number; width: number; height: number }
@@ -16,33 +15,25 @@ type DeskSceneProps = {
 }
 
 /**
- * Fill the viewport with the desk photo (no letterboxing).
- * 1) Scale to cover width; crop the bottom edge of the desk if needed.
- * 2) If that still leaves vertical gaps, scale to cover height (crop sides)
- *    and shift up as a last resort so any leftover overflow crops the top.
+ * Full-bleed desk: prefer filling height and cropping left/right, centered.
+ * If the frame is still short on width, fill width and center vertically.
  */
 function coverLayout(vw: number, vh: number) {
-  // Pass 1 — fill width, pin top, crop bottom.
-  let width = vw
-  let height = vw / IMG_ASPECT
+  // Pass 1 — fill height, center, crop left/right.
+  let height = vh
+  let width = height * IMG_ASPECT
   let top = 0
-  let left = 0
+  let left = (vw - width) / 2
 
-  if (height + 0.5 < vh) {
-    // Pass 2 — still not tall enough: fill height, crop sides.
-    height = vh
-    width = vh * IMG_ASPECT
-    left = (vw - width) / 2
-    top = 0
-
-    // Last resort — if anything still overshoots vertically, pin to the
-    // bottom edge so the overflow crops the top of the frame.
-    if (top + height > vh + 0.5) {
-      top = vh - height
-    }
+  if (width + 0.5 < vw) {
+    // Pass 2 — not wide enough: fill width, center vertically.
+    width = vw
+    height = width / IMG_ASPECT
+    left = 0
+    top = (vh - height) / 2
   }
 
-  // Tiny overscan avoids sub-pixel hairlines at the edges.
+  // Tiny overscan to hide sub-pixel gaps.
   const overscan = 1.002
   const cx = left + width / 2
   const cy = top + height / 2
@@ -50,11 +41,6 @@ function coverLayout(vw: number, vh: number) {
   height *= overscan
   left = cx - width / 2
   top = cy - height / 2
-
-  // Re-assert crop priority after overscan: prefer bottom crop (top <= 0),
-  // only allow top crop if the bottom is already flush.
-  if (top > 0) top = 0
-  if (top + height < vh) top = vh - height
 
   return { width, height, top, left }
 }
@@ -69,13 +55,15 @@ export function DeskScene({ mode, onOpenDesktop, onBackHome }: DeskSceneProps) {
     if (!scene) return
 
     const apply = () => {
-      const vw = window.innerWidth
-      const vh = window.innerHeight
-      const { width, height, top, left } = coverLayout(vw, vh)
+      const { width, height, top, left } = coverLayout(
+        window.innerWidth,
+        window.innerHeight,
+      )
       scene.style.width = `${width}px`
       scene.style.height = `${height}px`
       scene.style.top = `${top}px`
       scene.style.left = `${left}px`
+      scene.style.marginLeft = '0'
     }
 
     apply()

@@ -18,11 +18,12 @@
 
 .desk-scene {
   position: absolute;
-  /* Temporary pre-JS size: fill width, crop bottom */
+  /* Pre-JS: fill height, crop left/right, centered */
   top: 0;
-  left: 0;
-  width: 100vw;
-  height: calc(100vw * 1686 / 2528);
+  left: 50%;
+  height: 100dvh;
+  width: calc(100dvh * 2752 / 1536);
+  margin-left: calc(100dvh * 2752 / 1536 / -2);
   will-change: width, height, top, left;
 }
 
@@ -40,7 +41,7 @@
   object-fit: cover;
   object-position: top center;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.15s ease;
   border: 0;
   box-shadow: none;
   outline: none;

@@ -97,17 +97,16 @@ def detect_screen(img: Image.Image) -> tuple[int, int, int, int]:
 def compose_browser_idle(
     out_path: Path,
     content_path: Path,
-    screen_w: int = 839,
-    screen_h: int = 474,
+    screen_w: int = 772,
+    screen_h: int = 435,
 ) -> None:
-    """Cover-fit the provided screenshot into the monitor rect — no gray frame, no extra chrome."""
+    """Cover-fit screenshot into the 16:9 monitor rect — no gray frame."""
     content = Image.open(content_path).convert("RGB")
     cw, ch = content.size
     scale = max(screen_w / cw, screen_h / ch)
     nw, nh = int(cw * scale + 0.5), int(ch * scale + 0.5)
     resized = content.resize((nw, nh), Image.Resampling.LANCZOS)
     left = (nw - screen_w) // 2
-    # Prefer keeping the top (browser tabs); crop bottom if needed.
     top = 0
     if top + screen_h > nh:
         top = nh - screen_h

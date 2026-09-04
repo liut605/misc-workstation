@@ -10,6 +10,16 @@ type DeskMode = 'room' | 'zooming' | 'desktop'
 
 type MorphRect = { top: number; left: number; width: number; height: number }
 
+/** Cover the viewport with a rect that keeps the source aspect ratio. */
+function coverRect(aspect: number, vw: number, vh: number): MorphRect {
+  if (vw / vh > aspect) {
+    const height = vw / aspect
+    return { top: (vh - height) / 2, left: 0, width: vw, height }
+  }
+  const width = vh * aspect
+  return { top: 0, left: (vw - width) / 2, width, height: vh }
+}
+
 function App() {
   const [view, setView] = useState<View>('home')
   const [deskMode, setDeskMode] = useState<DeskMode>('room')
@@ -18,6 +28,7 @@ function App() {
   const morphRef = useRef<HTMLDivElement>(null)
   const morphImgRef = useRef<HTMLImageElement>(null)
   const timelineRef = useRef<gsap.core.Timeline | null>(null)
+  const screenRectRef = useRef<MorphRect | null>(null)
 
   const enterMisc = useCallback((previewEl: HTMLElement) => {
     const veil = veilRef.current
@@ -76,8 +87,12 @@ function App() {
     }
 
     timelineRef.current?.kill()
+    screenRectRef.current = screenRect
     setDeskMode('zooming')
     setBrowserVisible(false)
+
+    const aspect = screenRect.width / screenRect.height
+    const end = coverRect(aspect, window.innerWidth, window.innerHeight)
 
     gsap.set(morph, {
       display: 'block',
@@ -86,66 +101,72 @@ function App() {
       left: screenRect.left,
       width: screenRect.width,
       height: screenRect.height,
-      borderRadius: 0,
     })
-    // Keep the still's aspect: cover the morph box (never stretch).
-    gsap.set(morphImg, {
-      opacity: 1,
-      width: '100%',
-      height: '100%',
-      objectFit: 'cover',
-      objectPosition: 'top center',
-    })
+    gsap.set(morphImg, { opacity: 1 })
 
     const tl = gsap.timeline({
       onComplete: () => {
         setDeskMode('desktop')
-        gsap.set(morph, { display: 'none', opacity: 0 })
+        setBrowserVisible(true)
+        gsap.set(morph, { display: 'none' })
       },
     })
     timelineRef.current = tl
 
-    // Grow the clip rect to the viewport. Image uses cover so aspect stays intact.
-    tl.to(
-      morph,
-      {
-        top: 0,
-        left: 0,
-        width: window.innerWidth,
-        height: window.innerHeight,
-        duration: 1.15,
-        ease: 'power2.inOut',
-      },
-      0,
-    )
-
-    // Bring live browser under the morph mid-way, then dissolve the still.
-    tl.call(
-      () => {
-        setDeskMode('desktop')
-        setBrowserVisible(true)
-      },
-      [],
-      0.45,
-    )
-
-    tl.to(
-      morphImg,
-      {
-        opacity: 0,
-        duration: 0.55,
-        ease: 'power1.inOut',
-      },
-      0.65,
-    )
+    // Smooth zoom only — same aspect in and out, no soft aspect morph.
+    tl.to(morph, {
+      top: end.top,
+      left: end.left,
+      width: end.width,
+      height: end.height,
+      duration: 0.85,
+      ease: 'power2.inOut',
+    })
   }, [])
 
   const exitDesktop = useCallback(() => {
-    timelineRef.current?.kill()
     const morph = morphRef.current
-    if (morph) gsap.set(morph, { display: 'none', opacity: 0 })
+    const morphImg = morphImgRef.current
+    const screenRect = screenRectRef.current
+    if (!morph || !morphImg || !screenRect) {
+      setBrowserVisible(false)
+      setDeskMode('room')
+      return
+    }
+
+    timelineRef.current?.kill()
     setBrowserVisible(false)
-    setDeskMode('room')
+    setDeskMode('zooming')
+
+    const aspect = screenRect.width / screenRect.height
+    const start = coverRect(aspect, window.innerWidth, window.innerHeight)
+
+    gsap.set(morph, {
+      display: 'block',
+      opacity: 1,
+      top: start.top,
+      left: start.left,
+      width: start.width,
+      height: start.height,
+    })
+    gsap.set(morphImg, { opacity: 1 })
+
+    const tl = gsap.timeline({
+      onComplete: () => {
+        gsap.set(morph, { display: 'none', opacity: 0 })
+        setDeskMode('room')
+      },
+    })
+    timelineRef.current = tl
+
+    tl.to(morph, {
+      top: screenRect.top,
+      left: screenRect.left,
+      width: screenRect.width,
+      height: screenRect.height,
+      duration: 0.85,
+      ease: 'power2.inOut',
+    })
   }, [])
 
   useEffect(() => {
@@ -163,7 +184,11 @@ function App() {
           mode={deskMode}
           onOpenDesktop={openDesktop}
           onBackHome={() => {
-            exitDesktop()
+            timelineRef.current?.kill()
+            const morph = morphRef.current
+            if (morph) gsap.set(morph, { display: 'none', opacity: 0 })
+            setBrowserVisible(false)
+            setDeskMode('room')
             setView('home')
           }}
         />
@@ -179,7 +204,7 @@ function App() {
       >
         <img
           ref={morphImgRef}
-          src="/rooted-nyc-screenshot.png"
+          src="/browser-idle-screenshot.jpg"
           alt=""
           className="screen-morph-img"
         />

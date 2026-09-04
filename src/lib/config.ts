@@ -1,14 +1,15 @@
-/** Percentage of the desk image occupied by the iMac screen content.
- *  Flushed to the inner edge of the black bezel (no gray gap). */
+/** Percentage of desk-final.jpg occupied by the iMac screen (16:9). */
 export const SCREEN_RECT = {
-  left: 0.34651898734177217,
-  top: 0.44187425860023727,
-  width: 0.33188291139240506,
-  height: 0.28113879003558717,
+  left: 0.36664244186046513,
+  top: 0.44140625,
+  width: 0.2805232558139535,
+  height: 0.283203125,
 } as const
 
-/** Native pixel size of the screen content area in desk-final.jpg */
-export const SCREEN_PIXELS = { width: 839, height: 474 } as const
+export const SCREEN_PIXELS = { width: 772, height: 435 } as const
+
+/** Native desk photo size */
+export const DESK_IMAGE = { width: 2752, height: 1536 } as const
 
 export type AppTab = {
   id: string
