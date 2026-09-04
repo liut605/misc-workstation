@@ -49,6 +49,41 @@ function coverLayout(vw: number, vh: number) {
   return { width, height, top, left }
 }
 
+function playVideoReverse(
+  video: HTMLVideoElement,
+  onDone: () => void,
+): () => void {
+  let cancelled = false
+  let raf = 0
+  const fps = 30
+  const step = 1 / fps
+  let last = performance.now()
+
+  const tick = (now: number) => {
+    if (cancelled) return
+    const elapsed = now - last
+    if (elapsed >= 1000 / fps) {
+      last = now
+      const next = Math.max(0, video.currentTime - step)
+      video.currentTime = next
+      if (next <= 0.02) {
+        video.pause()
+        video.currentTime = 0
+        onDone()
+        return
+      }
+    }
+    raf = requestAnimationFrame(tick)
+  }
+
+  video.pause()
+  raf = requestAnimationFrame(tick)
+  return () => {
+    cancelled = true
+    cancelAnimationFrame(raf)
+  }
+}
+
 export function DeskScene({
   mode,
   onOpenDesktop,
@@ -63,9 +98,14 @@ export function DeskScene({
   const notebookHotspotRef = useRef<HTMLButtonElement>(null)
   const notebookFocusRef = useRef<HTMLSpanElement>(null)
   const overheadRef = useRef<HTMLDivElement>(null)
+  const zoomVideoRef = useRef<HTMLVideoElement>(null)
+  const prevModeRef = useRef<DeskMode>(mode)
+  const reverseCancelRef = useRef<(() => void) | null>(null)
+  const sketchTlRef = useRef<gsap.core.Timeline | null>(null)
   const [hintVisible, setHintVisible] = useState(false)
   const [notebookHint, setNotebookHint] = useState(false)
-  const sketchTlRef = useRef<gsap.core.Timeline | null>(null)
+  const [pagesActive, setPagesActive] = useState(false)
+  const [videoPlaying, setVideoPlaying] = useState(false)
 
   useLayoutEffect(() => {
     const scene = sceneRef.current
@@ -92,22 +132,110 @@ export function DeskScene({
     }
   }, [sceneRef])
 
-  // Sketchbook: 2D dolly toward the book, then crossfade to true top-down frame.
+  // Sketchbook: Flow zoom video → overhead handoff (fallback: 2D dolly).
   useLayoutEffect(() => {
     const scene = sceneRef.current
     const focus = notebookFocusRef.current
     const overhead = overheadRef.current
+    const video = zoomVideoRef.current
     if (!scene || !focus || !overhead) return
 
-    sketchTlRef.current?.kill()
+    const prev = prevModeRef.current
+    prevModeRef.current = mode
 
+    sketchTlRef.current?.kill()
+    reverseCancelRef.current?.()
+    reverseCancelRef.current = null
+
+    const hasVideo = Boolean(video && NOTEBOOK.zoomVideo)
     const origin = `${NOTEBOOK.centerX * 100}% ${NOTEBOOK.centerY * 100}%`
     gsap.set(scene, { transformOrigin: origin, force3D: true })
 
-    if (mode === 'sketchbook') {
-      gsap.set(scene, { x: 0, y: 0, scale: 1, rotation: 0 })
-      gsap.set(overhead, { autoAlpha: 0, scale: 1.06 })
+    const handoffToOverhead = () => {
+      const tl = gsap.timeline({
+        onComplete: () => {
+          setPagesActive(true)
+          setVideoPlaying(false)
+          if (video) {
+            video.pause()
+          }
+        },
+      })
+      sketchTlRef.current = tl
+      tl.to(
+        overhead,
+        {
+          autoAlpha: 1,
+          scale: 1,
+          duration: 0.45,
+          ease: 'power2.out',
+        },
+        0,
+      )
+      if (video) {
+        tl.to(
+          video,
+          {
+            autoAlpha: 0,
+            duration: 0.4,
+            ease: 'power2.inOut',
+          },
+          0.05,
+        )
+      }
+    }
 
+    if (mode === 'sketchbook' && prev !== 'sketchbook') {
+      setPagesActive(false)
+      gsap.set(scene, { x: 0, y: 0, scale: 1, rotation: 0 })
+      gsap.set(overhead, { autoAlpha: 0, scale: 1.02 })
+
+      if (hasVideo && video) {
+        setVideoPlaying(true)
+        gsap.set(video, { autoAlpha: 1 })
+        video.currentTime = 0
+        const lead = NOTEBOOK.zoomHandoffLead
+        let handedOff = false
+
+        const tryHandoff = () => {
+          if (handedOff) return
+          const dur = video.duration
+          if (!Number.isFinite(dur) || dur <= 0) return
+          if (video.currentTime >= dur - lead) {
+            handedOff = true
+            video.removeEventListener('timeupdate', onTime)
+            video.removeEventListener('ended', onEnded)
+            handoffToOverhead()
+          }
+        }
+
+        const onTime = () => tryHandoff()
+        const onEnded = () => {
+          if (handedOff) return
+          handedOff = true
+          video.removeEventListener('timeupdate', onTime)
+          handoffToOverhead()
+        }
+
+        video.addEventListener('timeupdate', onTime)
+        video.addEventListener('ended', onEnded)
+        void video.play().catch(() => {
+          // Autoplay blocked — jump straight to overhead.
+          handedOff = true
+          video.removeEventListener('timeupdate', onTime)
+          video.removeEventListener('ended', onEnded)
+          handoffToOverhead()
+        })
+
+        return () => {
+          video.removeEventListener('timeupdate', onTime)
+          video.removeEventListener('ended', onEnded)
+          sketchTlRef.current?.kill()
+          reverseCancelRef.current?.()
+        }
+      }
+
+      // Fallback: 2D dolly + overhead crossfade
       const focusBox = focus.getBoundingClientRect()
       const focusCx = focusBox.left + focusBox.width / 2
       const focusCy = focusBox.top + focusBox.height / 2
@@ -116,7 +244,9 @@ export function DeskScene({
       const dy = window.innerHeight / 2 - focusCy
       const dur = NOTEBOOK.zoom.duration
 
-      const tl = gsap.timeline()
+      const tl = gsap.timeline({
+        onComplete: () => setPagesActive(true),
+      })
       sketchTlRef.current = tl
       tl.to(
         scene,
@@ -140,8 +270,64 @@ export function DeskScene({
         },
         dur * NOTEBOOK.zoom.overheadFadeAt,
       )
-    } else if (mode === 'room') {
-      const overheadVisible = Number(gsap.getProperty(overhead, 'autoAlpha')) > 0.01
+    } else if (mode === 'room' && prev === 'sketchbook') {
+      setPagesActive(false)
+
+      if (hasVideo && video) {
+        const finishExit = () => {
+          setVideoPlaying(false)
+          gsap.set(video, { autoAlpha: 0 })
+          gsap.set(overhead, { autoAlpha: 0, scale: 1.02 })
+          gsap.set(scene, { x: 0, y: 0, scale: 1, rotation: 0 })
+          video.pause()
+          video.currentTime = 0
+        }
+
+        const startReverse = () => {
+          setVideoPlaying(true)
+          gsap.set(video, { autoAlpha: 1 })
+          reverseCancelRef.current = playVideoReverse(video, finishExit)
+        }
+
+        const overheadVisible =
+          Number(gsap.getProperty(overhead, 'autoAlpha')) > 0.01
+
+        if (overheadVisible) {
+          // Seek video to end so reverse starts from the overhead pose.
+          const seekEnd = () => {
+            if (Number.isFinite(video.duration) && video.duration > 0) {
+              video.currentTime = Math.max(0, video.duration - 0.04)
+            }
+          }
+          seekEnd()
+          const tl = gsap.timeline({
+            onComplete: startReverse,
+          })
+          sketchTlRef.current = tl
+          tl.to(overhead, {
+            autoAlpha: 0,
+            scale: 1.02,
+            duration: 0.28,
+            ease: 'power2.in',
+          })
+          tl.fromTo(
+            video,
+            { autoAlpha: 0 },
+            { autoAlpha: 1, duration: 0.2, ease: 'power1.out' },
+            0,
+          )
+        } else {
+          startReverse()
+        }
+
+        return () => {
+          sketchTlRef.current?.kill()
+          reverseCancelRef.current?.()
+        }
+      }
+
+      const overheadVisible =
+        Number(gsap.getProperty(overhead, 'autoAlpha')) > 0.01
       const currentScale = Number(gsap.getProperty(scene, 'scale'))
       if (!overheadVisible && currentScale === 1) {
         gsap.set(scene, { x: 0, y: 0, scale: 1, rotation: 0 })
@@ -168,10 +354,17 @@ export function DeskScene({
         },
         0.15,
       )
+    } else if (mode === 'room' && prev === 'room') {
+      gsap.set(scene, { x: 0, y: 0, scale: 1, rotation: 0 })
+      gsap.set(overhead, { autoAlpha: 0, scale: 1.06 })
+      if (video) gsap.set(video, { autoAlpha: 0 })
+      setPagesActive(false)
+      setVideoPlaying(false)
     }
 
     return () => {
       sketchTlRef.current?.kill()
+      reverseCancelRef.current?.()
     }
   }, [mode, sceneRef])
 
@@ -186,11 +379,11 @@ export function DeskScene({
 
   const interactive = mode === 'room'
   const showChrome = mode === 'room'
-  const inSketchbook = mode === 'sketchbook'
+  const inSketchbook = mode === 'sketchbook' || videoPlaying
 
   return (
     <div
-      className={`desk-view ${mode !== 'room' ? 'is-zoomed' : ''} ${inSketchbook ? 'is-sketchbook' : ''}`}
+      className={`desk-view ${mode !== 'room' || videoPlaying ? 'is-zoomed' : ''} ${inSketchbook ? 'is-sketchbook' : ''}`}
     >
       {showChrome && (
         <button type="button" className="desk-back" onClick={onBackHome}>
@@ -198,7 +391,7 @@ export function DeskScene({
         </button>
       )}
 
-      {inSketchbook && (
+      {(mode === 'sketchbook' || videoPlaying) && (
         <button
           type="button"
           className="sketch-exit"
@@ -227,7 +420,7 @@ export function DeskScene({
               top: `${SCREEN_RECT.top * 100}%`,
               width: `${SCREEN_RECT.width * 100}%`,
               height: `${SCREEN_RECT.height * 100}%`,
-              opacity: mode === 'room' ? 1 : 0,
+              opacity: mode === 'room' && !videoPlaying ? 1 : 0,
             }}
           />
 
@@ -291,17 +484,27 @@ export function DeskScene({
         </div>
       </div>
 
+      <video
+        ref={zoomVideoRef}
+        className="sketchbook-zoom-video"
+        src={NOTEBOOK.zoomVideo}
+        muted
+        playsInline
+        preload="auto"
+        aria-hidden
+      />
+
       <div
         ref={overheadRef}
         className="sketchbook-overhead"
-        aria-hidden={!inSketchbook}
+        aria-hidden={!pagesActive}
       >
         <img
           src="/sketchbook-overhead.jpg"
           alt=""
           draggable={false}
         />
-        <SketchbookPages active={inSketchbook} />
+        <SketchbookPages active={pagesActive} />
       </div>
 
       {showChrome && hintVisible && (

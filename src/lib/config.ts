@@ -33,10 +33,13 @@ export const NOTEBOOK = {
   centerX: 0.265,
   centerY: 0.86,
   /**
-   * Approach camera (2D) while zooming toward the open spread, then
-   * crossfade to `public/sketchbook-overhead.jpg` (true top-down).
-   * Keep rotateZ light — the overhead frame handles final alignment.
+   * Enter/exit uses Flow zoom clip (`zoomVideo`), then hands off to
+   * `public/sketchbook-overhead.jpg` for interactive page turns.
+   * Legacy 2D dolly kept only as a no-video fallback.
    */
+  zoomVideo: '/sketchbook-zoom.mp4',
+  /** Start crossfade to overhead this many seconds before clip end. */
+  zoomHandoffLead: 0.35,
   zoom: {
     scale: 4.0,
     rotateZ: 4,

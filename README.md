@@ -9,8 +9,9 @@ Interactive desk experience for Tsing Liu’s portfolio Misc page.
 3. **Zoom into desktop** — opens a desktop mockup with a browser:
    - **Rooted NYC** → live iframe at `https://rooted-nyc.tsingliu.info/`
    - **String of Pearls** + other tabs → placeholders until URLs are ready
-4. **Sketchbook zoom** — click the open notebook (left of the monitor) to dolly closer, lift the view, and straighten the pages so the book sits centered with desk around it; exit (× or Escape) reverses the motion. Page assets come later.
+4. **Sketchbook zoom** — click the open notebook to play a Flow camera-push clip (`public/sketchbook-zoom.mp4`), then hand off to the overhead still for interactive page turns (click pages or ‹ › / arrow keys). Exit (× or Escape) plays the clip in reverse back to the desk.
 5. Wall frames are **out of scope** for this pass.
+
 
 ## Run locally
 
@@ -24,9 +25,12 @@ Dev server: [http://127.0.0.1:43123](http://127.0.0.1:43123)
 ## Key files
 
 - `public/desk-final.jpg` — room still
+- `public/sketchbook-zoom.mp4` — Flow push-in from desk to overhead
+- `public/sketchbook-overhead.jpg` — top-down still for page turns
 - `public/browser-idle-screenshot.jpg` — distant monitor content
-- `src/lib/config.ts` — screen/notebook hotspot rects, camera end-state, tab URLs
-- `src/components/DeskScene.tsx` — room + monitor morph + sketchbook camera
+- `src/lib/config.ts` — screen/notebook hotspot rects, zoom video path, tab URLs
+- `src/components/DeskScene.tsx` — room + monitor morph + sketchbook video zoom
+- `src/components/SketchbookPages.tsx` — spine-hinged page turns
 - `src/components/DesktopBrowser.tsx` — OS/browser chrome + iframe
 
 ## Webflow next step
