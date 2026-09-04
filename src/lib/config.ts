@@ -33,18 +33,16 @@ export const NOTEBOOK = {
   centerX: 0.265,
   centerY: 0.86,
   /**
-   * End-state camera: overhead reading pose.
-   * The still is shot from in front of the desk; positive rotateX made the
-   * book feel even lower/more oblique. Negative rotateX pitches toward
-   * top-down (near edge recedes, far edge comes forward). rotateZ squares
-   * the ~15° CCW page tilt. Scale leaves a ring of desk around the book.
+   * Approach camera (2D) while zooming toward the open spread.
+   * A separate top-down overhead frame crossfades in at the end —
+   * a single angled still cannot become a true bird’s-eye via CSS 3D.
+   * Replace `public/sketchbook-overhead.jpg` when page assets arrive.
    */
   zoom: {
-    scale: 3.9,
+    scale: 4.2,
     rotateZ: 15,
-    rotateX: -46,
-    rotateY: 8,
-    perspective: 1600,
+    duration: 1.15,
+    overheadFadeAt: 0.45,
   },
 } as const
 

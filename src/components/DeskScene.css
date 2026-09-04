@@ -94,16 +94,31 @@
 }
 
 .desk-view.is-sketchbook {
-  background: #b7a898;
-}
-
-.desk-view.is-sketchbook .desk-stage {
-  perspective: 1600px;
-  perspective-origin: 50% 45%;
+  background: #8f7a68;
 }
 
 .desk-view.is-sketchbook .desk-scene {
   will-change: transform;
+}
+
+.sketchbook-overhead {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  background: #8f7a68;
+}
+
+.sketchbook-overhead img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .sketch-exit {

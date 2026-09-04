@@ -61,6 +61,7 @@ export function DeskScene({
   const hotspotRef = useRef<HTMLButtonElement>(null)
   const notebookHotspotRef = useRef<HTMLButtonElement>(null)
   const notebookFocusRef = useRef<HTMLSpanElement>(null)
+  const overheadRef = useRef<HTMLDivElement>(null)
   const [hintVisible, setHintVisible] = useState(false)
   const [notebookHint, setNotebookHint] = useState(false)
   const sketchTlRef = useRef<gsap.core.Timeline | null>(null)
@@ -90,90 +91,82 @@ export function DeskScene({
     }
   }, [sceneRef])
 
-  // Sketchbook camera: move closer, lift (rotateX), straighten (rotateZ), center.
+  // Sketchbook: 2D dolly toward the book, then crossfade to true top-down frame.
   useLayoutEffect(() => {
     const scene = sceneRef.current
     const focus = notebookFocusRef.current
-    if (!scene || !focus) return
+    const overhead = overheadRef.current
+    if (!scene || !focus || !overhead) return
 
     sketchTlRef.current?.kill()
 
     const origin = `${NOTEBOOK.centerX * 100}% ${NOTEBOOK.centerY * 100}%`
-    gsap.set(scene, {
-      transformOrigin: origin,
-      transformPerspective: NOTEBOOK.zoom.perspective,
-      force3D: true,
-    })
+    gsap.set(scene, { transformOrigin: origin, force3D: true })
 
     if (mode === 'sketchbook') {
-      // Measure focus while still at identity, then dolly + orbit in one motion.
-      gsap.set(scene, {
-        x: 0,
-        y: 0,
-        scale: 1,
-        rotation: 0,
-        rotationX: 0,
-        rotationY: 0,
-      })
+      gsap.set(scene, { x: 0, y: 0, scale: 1, rotation: 0 })
+      gsap.set(overhead, { autoAlpha: 0, scale: 1.06 })
+
       const focusBox = focus.getBoundingClientRect()
       const focusCx = focusBox.left + focusBox.width / 2
       const focusCy = focusBox.top + focusBox.height / 2
-      // Origin stays fixed under scale/rotate; x/y then slides the spread to center.
       const scale = NOTEBOOK.zoom.scale
       const dx = window.innerWidth / 2 - focusCx
       const dy = window.innerHeight / 2 - focusCy
+      const dur = NOTEBOOK.zoom.duration
 
       const tl = gsap.timeline()
       sketchTlRef.current = tl
-      tl.to(scene, {
-        x: dx,
-        y: dy,
-        scale,
-        rotation: NOTEBOOK.zoom.rotateZ,
-        rotationX: NOTEBOOK.zoom.rotateX,
-        rotationY: NOTEBOOK.zoom.rotateY,
-        duration: 1.25,
-        ease: 'power2.inOut',
-        onComplete: () => {
-          // Recenter after 3D pitch settles — rotateX shifts the visual midpoint.
-          const box = focus.getBoundingClientRect()
-          const cx = box.left + box.width / 2
-          const cy = box.top + box.height / 2
-          const curX = Number(gsap.getProperty(scene, 'x'))
-          const curY = Number(gsap.getProperty(scene, 'y'))
-          gsap.to(scene, {
-            x: curX + (window.innerWidth / 2 - cx),
-            y: curY + (window.innerHeight / 2 - cy),
-            duration: 0.35,
-            ease: 'power2.out',
-          })
+      tl.to(
+        scene,
+        {
+          x: dx,
+          y: dy,
+          scale,
+          rotation: NOTEBOOK.zoom.rotateZ,
+          duration: dur,
+          ease: 'power2.inOut',
         },
-      })
-    } else if (mode === 'room') {
-      const currentScale = Number(gsap.getProperty(scene, 'scale'))
-      if (currentScale === 1) {
-        gsap.set(scene, {
-          x: 0,
-          y: 0,
+        0,
+      )
+      tl.to(
+        overhead,
+        {
+          autoAlpha: 1,
           scale: 1,
-          rotation: 0,
-          rotationX: 0,
-          rotationY: 0,
-        })
+          duration: dur * 0.55,
+          ease: 'power2.out',
+        },
+        dur * NOTEBOOK.zoom.overheadFadeAt,
+      )
+    } else if (mode === 'room') {
+      const overheadVisible = Number(gsap.getProperty(overhead, 'autoAlpha')) > 0.01
+      const currentScale = Number(gsap.getProperty(scene, 'scale'))
+      if (!overheadVisible && currentScale === 1) {
+        gsap.set(scene, { x: 0, y: 0, scale: 1, rotation: 0 })
+        gsap.set(overhead, { autoAlpha: 0, scale: 1.06 })
         return
       }
       const tl = gsap.timeline()
       sketchTlRef.current = tl
-      tl.to(scene, {
-        x: 0,
-        y: 0,
-        scale: 1,
-        rotation: 0,
-        rotationX: 0,
-        rotationY: 0,
-        duration: 1.05,
-        ease: 'power2.inOut',
+      tl.to(overhead, {
+        autoAlpha: 0,
+        scale: 1.04,
+        duration: 0.4,
+        ease: 'power2.in',
       })
+      tl.to(
+        scene,
+        {
+          x: 0,
+          y: 0,
+          scale: 1,
+          rotation: 0,
+          duration: 1.0,
+          ease: 'power2.inOut',
+        },
+        0.15,
+      )
     }
 
     return () => {
@@ -237,7 +230,6 @@ export function DeskScene({
             }}
           />
 
-          {/* Focal marker for sketchbook camera math */}
           <span
             ref={notebookFocusRef}
             className="notebook-focus"
@@ -296,6 +288,18 @@ export function DeskScene({
             }}
           />
         </div>
+      </div>
+
+      <div
+        ref={overheadRef}
+        className="sketchbook-overhead"
+        aria-hidden={!inSketchbook}
+      >
+        <img
+          src="/sketchbook-overhead.jpg"
+          alt=""
+          draggable={false}
+        />
       </div>
 
       {showChrome && hintVisible && (
