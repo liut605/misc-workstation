@@ -33,16 +33,15 @@ export const NOTEBOOK = {
   centerX: 0.265,
   centerY: 0.86,
   /**
-   * Approach camera (2D) while zooming toward the open spread.
-   * A separate top-down overhead frame crossfades in at the end —
-   * a single angled still cannot become a true bird’s-eye via CSS 3D.
-   * Replace `public/sketchbook-overhead.jpg` when page assets arrive.
+   * Approach camera (2D) while zooming toward the open spread, then
+   * crossfade to `public/sketchbook-overhead.jpg` (true top-down).
+   * Keep rotateZ light — the overhead frame handles final alignment.
    */
   zoom: {
-    scale: 4.2,
-    rotateZ: 15,
+    scale: 4.0,
+    rotateZ: 4,
     duration: 1.15,
-    overheadFadeAt: 0.45,
+    overheadFadeAt: 0.42,
   },
 } as const
 
