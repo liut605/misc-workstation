@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { DESK_IMAGE, SCREEN_RECT } from '../lib/config'
+import gsap from 'gsap'
+import { DESK_IMAGE, NOTEBOOK, SCREEN_RECT } from '../lib/config'
 import './DeskScene.css'
 
 const IMG_W = DESK_IMAGE.width
@@ -8,10 +9,15 @@ const IMG_ASPECT = IMG_W / IMG_H
 
 type ScreenRect = { top: number; left: number; width: number; height: number }
 
+export type DeskMode = 'room' | 'zooming' | 'desktop' | 'sketchbook'
+
 type DeskSceneProps = {
-  mode: 'room' | 'zooming' | 'desktop'
+  mode: DeskMode
   onOpenDesktop: (screenRect: ScreenRect) => void
+  onOpenSketchbook: () => void
+  onExitSketchbook: () => void
   onBackHome: () => void
+  sceneRef?: React.RefObject<HTMLDivElement | null>
 }
 
 /**
@@ -19,21 +25,18 @@ type DeskSceneProps = {
  * If the frame is still short on width, fill width and center vertically.
  */
 function coverLayout(vw: number, vh: number) {
-  // Pass 1 — fill height, center, crop left/right.
   let height = vh
   let width = height * IMG_ASPECT
   let top = 0
   let left = (vw - width) / 2
 
   if (width + 0.5 < vw) {
-    // Pass 2 — not wide enough: fill width, center vertically.
     width = vw
     height = width / IMG_ASPECT
     left = 0
     top = (vh - height) / 2
   }
 
-  // Tiny overscan to hide sub-pixel gaps.
   const overscan = 1.002
   const cx = left + width / 2
   const cy = top + height / 2
@@ -45,10 +48,22 @@ function coverLayout(vw: number, vh: number) {
   return { width, height, top, left }
 }
 
-export function DeskScene({ mode, onOpenDesktop, onBackHome }: DeskSceneProps) {
-  const sceneRef = useRef<HTMLDivElement>(null)
+export function DeskScene({
+  mode,
+  onOpenDesktop,
+  onOpenSketchbook,
+  onExitSketchbook,
+  onBackHome,
+  sceneRef: externalSceneRef,
+}: DeskSceneProps) {
+  const internalSceneRef = useRef<HTMLDivElement>(null)
+  const sceneRef = externalSceneRef ?? internalSceneRef
   const hotspotRef = useRef<HTMLButtonElement>(null)
+  const notebookHotspotRef = useRef<HTMLButtonElement>(null)
+  const notebookFocusRef = useRef<HTMLSpanElement>(null)
   const [hintVisible, setHintVisible] = useState(false)
+  const [notebookHint, setNotebookHint] = useState(false)
+  const sketchTlRef = useRef<gsap.core.Timeline | null>(null)
 
   useLayoutEffect(() => {
     const scene = sceneRef.current
@@ -73,16 +88,113 @@ export function DeskScene({ mode, onOpenDesktop, onBackHome }: DeskSceneProps) {
       window.removeEventListener('resize', apply)
       window.visualViewport?.removeEventListener('resize', apply)
     }
-  }, [])
+  }, [sceneRef])
+
+  // Sketchbook camera: move closer, lift (rotateX), straighten (rotateZ), center.
+  useLayoutEffect(() => {
+    const scene = sceneRef.current
+    const focus = notebookFocusRef.current
+    if (!scene || !focus) return
+
+    sketchTlRef.current?.kill()
+
+    const origin = `${NOTEBOOK.centerX * 100}% ${NOTEBOOK.centerY * 100}%`
+    gsap.set(scene, {
+      transformOrigin: origin,
+      transformPerspective: NOTEBOOK.zoom.perspective,
+      force3D: true,
+    })
+
+    if (mode === 'sketchbook') {
+      // Measure focus while still at identity, then dolly + orbit in one motion.
+      gsap.set(scene, {
+        x: 0,
+        y: 0,
+        scale: 1,
+        rotation: 0,
+        rotationX: 0,
+      })
+      const focusBox = focus.getBoundingClientRect()
+      const focusCx = focusBox.left + focusBox.width / 2
+      const focusCy = focusBox.top + focusBox.height / 2
+      // Origin stays fixed under scale/rotate; x/y then slides the spread to center.
+      // Slight upward bias counters rotateX foreshortening pulling the book down.
+      const scale = NOTEBOOK.zoom.scale
+      const dx = window.innerWidth / 2 - focusCx
+      const dy = window.innerHeight / 2 - focusCy - window.innerHeight * 0.04
+
+      const tl = gsap.timeline()
+      sketchTlRef.current = tl
+      tl.to(scene, {
+        x: dx,
+        y: dy,
+        scale,
+        rotation: NOTEBOOK.zoom.rotateZ,
+        rotationX: NOTEBOOK.zoom.rotateX,
+        duration: 1.2,
+        ease: 'power2.inOut',
+      })
+    } else if (mode === 'room') {
+      const currentScale = Number(gsap.getProperty(scene, 'scale'))
+      if (currentScale === 1) {
+        gsap.set(scene, {
+          x: 0,
+          y: 0,
+          scale: 1,
+          rotation: 0,
+          rotationX: 0,
+        })
+        return
+      }
+      const tl = gsap.timeline()
+      sketchTlRef.current = tl
+      tl.to(scene, {
+        x: 0,
+        y: 0,
+        scale: 1,
+        rotation: 0,
+        rotationX: 0,
+        duration: 1.05,
+        ease: 'power2.inOut',
+      })
+    }
+
+    return () => {
+      sketchTlRef.current?.kill()
+    }
+  }, [mode, sceneRef])
+
+  useLayoutEffect(() => {
+    if (mode !== 'sketchbook') return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onExitSketchbook()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mode, onExitSketchbook])
 
   const interactive = mode === 'room'
   const showChrome = mode === 'room'
+  const inSketchbook = mode === 'sketchbook'
 
   return (
-    <div className={`desk-view ${mode !== 'room' ? 'is-zoomed' : ''}`}>
+    <div
+      className={`desk-view ${mode !== 'room' ? 'is-zoomed' : ''} ${inSketchbook ? 'is-sketchbook' : ''}`}
+    >
       {showChrome && (
         <button type="button" className="desk-back" onClick={onBackHome}>
           ← Home
+        </button>
+      )}
+
+      {inSketchbook && (
+        <button
+          type="button"
+          className="sketch-exit"
+          aria-label="Exit sketchbook"
+          onClick={onExitSketchbook}
+        >
+          <span aria-hidden="true" />
         </button>
       )}
 
@@ -107,6 +219,18 @@ export function DeskScene({ mode, onOpenDesktop, onBackHome }: DeskSceneProps) {
               opacity: mode === 'room' ? 1 : 0,
             }}
           />
+
+          {/* Focal marker for sketchbook camera math */}
+          <span
+            ref={notebookFocusRef}
+            className="notebook-focus"
+            style={{
+              left: `${NOTEBOOK.centerX * 100}%`,
+              top: `${NOTEBOOK.centerY * 100}%`,
+            }}
+            aria-hidden="true"
+          />
+
           <button
             ref={hotspotRef}
             type="button"
@@ -135,16 +259,33 @@ export function DeskScene({ mode, onOpenDesktop, onBackHome }: DeskSceneProps) {
               height: `${SCREEN_RECT.height * 100}%`,
             }}
           />
+
+          <button
+            ref={notebookHotspotRef}
+            type="button"
+            className="notebook-hotspot"
+            aria-label="Open sketchbook"
+            disabled={!interactive}
+            onMouseEnter={() => interactive && setNotebookHint(true)}
+            onMouseLeave={() => setNotebookHint(false)}
+            onFocus={() => interactive && setNotebookHint(true)}
+            onBlur={() => setNotebookHint(false)}
+            onClick={onOpenSketchbook}
+            style={{
+              left: `${NOTEBOOK.left * 100}%`,
+              top: `${NOTEBOOK.top * 100}%`,
+              width: `${NOTEBOOK.width * 100}%`,
+              height: `${NOTEBOOK.height * 100}%`,
+            }}
+          />
         </div>
       </div>
 
-      {showChrome && (
-        <p
-          className={`desk-hint ${hintVisible ? 'is-visible' : ''}`}
-          aria-hidden={!hintVisible}
-        >
-          Click the screen to enter projects
-        </p>
+      {showChrome && hintVisible && (
+        <p className="desk-hint is-visible">Click the screen to enter projects</p>
+      )}
+      {showChrome && notebookHint && !hintVisible && (
+        <p className="desk-hint is-visible">Click the sketchbook to look closer</p>
       )}
     </div>
   )

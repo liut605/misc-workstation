@@ -11,6 +11,40 @@ export const SCREEN_PIXELS = { width: 772, height: 435 } as const
 /** Native desk photo size */
 export const DESK_IMAGE = { width: 2752, height: 1536 } as const
 
+/**
+ * Open sketchbook on the left of the desk (image-normalized 0–1).
+ *
+ * Perspective notes (from desk-final.jpg):
+ * - Book sits left of the iMac, lower third of frame, on the wood desk.
+ * - Open blank spread; no pen in current still.
+ * - Strong foreshortening: near (bottom) edge wider than far (top) edge —
+ *   classic top-down-from-slightly-in-front desk photo.
+ * - Spine runs roughly vertical with a slight CCW tilt (~12–16°) in frame;
+ *   clockwise rotateZ ~14° brings pages level for reading.
+ * - Hotspot AABB is generous for click; zoom centers on the open spread.
+ */
+export const NOTEBOOK = {
+  /** Generous click AABB around the open book. */
+  left: 0.12,
+  top: 0.62,
+  width: 0.3,
+  height: 0.34,
+  /** Visual center of the open spread (for camera aim). */
+  centerX: 0.265,
+  centerY: 0.86,
+  /**
+   * End-state camera: closer, higher (tilt toward overhead),
+   * rotated clockwise ~15° to square the book (near edge was ~−15°),
+   * with desk wood still framing the pages.
+   */
+  zoom: {
+    scale: 3.25,
+    rotateZ: 15,
+    rotateX: 30,
+    perspective: 1600,
+  },
+} as const
+
 export type AppTab = {
   id: string
   label: string

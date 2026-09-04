@@ -66,6 +66,83 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
+.notebook-hotspot {
+  position: absolute;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: zoom-in;
+  border-radius: 2px;
+}
+
+.notebook-hotspot:disabled {
+  cursor: default;
+}
+
+.notebook-hotspot:not(:disabled):hover,
+.notebook-hotspot:not(:disabled):focus-visible {
+  outline: none;
+  background: rgba(255, 250, 244, 0.06);
+}
+
+.notebook-focus {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.desk-view.is-sketchbook {
+  background: #b7a898;
+}
+
+.desk-view.is-sketchbook .desk-stage {
+  perspective: 1600px;
+  perspective-origin: 50% 45%;
+}
+
+.desk-view.is-sketchbook .desk-scene {
+  will-change: transform;
+}
+
+.sketch-exit {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 6;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 250, 244, 0.9);
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(28, 25, 22, 0.14);
+}
+
+.sketch-exit span,
+.sketch-exit span::before {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 2px;
+  background: #1c1916;
+  border-radius: 1px;
+}
+
+.sketch-exit span {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.sketch-exit span::before {
+  content: '';
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.sketch-exit:hover {
+  background: #fffaf4;
+}
+
 .desk-back {
   position: absolute;
   top: 16px;
