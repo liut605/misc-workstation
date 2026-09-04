@@ -86,9 +86,16 @@ function App() {
       left: screenRect.left,
       width: screenRect.width,
       height: screenRect.height,
-      borderRadius: 2,
+      borderRadius: 0,
     })
-    gsap.set(morphImg, { opacity: 1 })
+    // Keep the still's aspect: cover the morph box (never stretch).
+    gsap.set(morphImg, {
+      opacity: 1,
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      objectPosition: 'top center',
+    })
 
     const tl = gsap.timeline({
       onComplete: () => {
@@ -98,7 +105,7 @@ function App() {
     })
     timelineRef.current = tl
 
-    // Morph screen rect → fullscreen; aspect ratio eases with the bounds.
+    // Grow the clip rect to the viewport. Image uses cover so aspect stays intact.
     tl.to(
       morph,
       {
@@ -106,7 +113,6 @@ function App() {
         left: 0,
         width: window.innerWidth,
         height: window.innerHeight,
-        borderRadius: 0,
         duration: 1.15,
         ease: 'power2.inOut',
       },
@@ -173,7 +179,7 @@ function App() {
       >
         <img
           ref={morphImgRef}
-          src="/browser-idle-screenshot.jpg"
+          src="/rooted-nyc-screenshot.png"
           alt=""
           className="screen-morph-img"
         />

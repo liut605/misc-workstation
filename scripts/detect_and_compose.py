@@ -97,61 +97,23 @@ def detect_screen(img: Image.Image) -> tuple[int, int, int, int]:
 def compose_browser_idle(
     out_path: Path,
     content_path: Path,
-    screen_w: int = 831,
-    screen_h: int = 461,
+    screen_w: int = 839,
+    screen_h: int = 474,
 ) -> None:
-    """Idle monitor art at exact screen aspect: tabs + close, full page, no letterbox border."""
+    """Cover-fit the provided screenshot into the monitor rect — no gray frame, no extra chrome."""
     content = Image.open(content_path).convert("RGB")
-    tab_h = 40
-    img = Image.new("RGB", (screen_w, screen_h), (245, 245, 247))
-    draw = ImageDraw.Draw(img)
-    draw.rectangle([0, 0, screen_w, tab_h], fill=(240, 240, 243))
-
-    try:
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 11)
-    except Exception:
-        font = ImageFont.load_default()
-
-    tabs = [
-        ("Rooted NYC", True),
-        ("String of Pearls", False),
-        ("Studio Notes", False),
-        ("New Tab", False),
-    ]
-    tx = 8
-    for label, active in tabs:
-        tw = max(88, int(draw.textlength(label, font=font) + 20))
-        if tx + tw > screen_w - 36:
-            break
-        y0 = 8
-        fill = (255, 255, 255) if active else (228, 228, 232)
-        draw.rounded_rectangle([tx, y0, tx + tw, tab_h], radius=6, fill=fill)
-        draw.text(
-            (tx + 10, y0 + 8),
-            label,
-            fill=(29, 29, 31) if active else (107, 107, 112),
-            font=font,
-        )
-        tx += tw + 3
-
-    cx, cy = screen_w - 16, 20
-    draw.line([(cx - 5, cy - 5), (cx + 5, cy + 5)], fill=(92, 92, 98), width=2)
-    draw.line([(cx + 5, cy - 5), (cx - 5, cy + 5)], fill=(92, 92, 98), width=2)
-
     cw, ch = content.size
-    area_w, area_h = screen_w, screen_h - tab_h
-    scale = area_w / cw
-    nw, nh = area_w, int(ch * scale)
+    scale = max(screen_w / cw, screen_h / ch)
+    nw, nh = int(cw * scale + 0.5), int(ch * scale + 0.5)
     resized = content.resize((nw, nh), Image.Resampling.LANCZOS)
-    if nh >= area_h:
-        top_crop = nh - area_h
-        img.paste(resized.crop((0, top_crop, nw, nh)), (0, tab_h))
-    else:
-        draw.rectangle([0, tab_h, screen_w, screen_h], fill=(236, 242, 236))
-        img.paste(resized, (0, tab_h + (area_h - nh)))
-
-    img.save(out_path, quality=94, optimize=True)
-    print(f"wrote {out_path} size={img.size}")
+    left = (nw - screen_w) // 2
+    # Prefer keeping the top (browser tabs); crop bottom if needed.
+    top = 0
+    if top + screen_h > nh:
+        top = nh - screen_h
+    out = resized.crop((left, top, left + screen_w, top + screen_h))
+    out.save(out_path, quality=94, optimize=True)
+    print(f"wrote {out_path} size={out.size}")
 
 
 def main() -> None:

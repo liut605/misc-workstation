@@ -37,7 +37,8 @@
 
 .screen-idle {
   position: absolute;
-  object-fit: fill;
+  object-fit: cover;
+  object-position: top center;
   pointer-events: none;
   transition: opacity 0.2s ease;
   border: 0;
