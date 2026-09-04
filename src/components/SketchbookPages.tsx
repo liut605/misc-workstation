@@ -28,12 +28,16 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
   const current = spreads[index]
   const next = spreads[Math.min(index + 1, last)]
   const { leftPage, rightPage, pageRect, pageRadiusRatio } = SKETCHBOOK
-  const round = { borderRadius: `${radiusPx}px` }
+  const round = { borderRadius: pageRadiusRatio > 0 ? `${radiusPx}px` : '0px' }
 
   useLayoutEffect(() => {
     const el = measureRef.current
     if (!el) return
     const update = () => {
+      if (pageRadiusRatio <= 0) {
+        setRadiusPx(0)
+        return
+      }
       setRadiusPx(Math.max(16, el.getBoundingClientRect().height * pageRadiusRatio))
     }
     update()
