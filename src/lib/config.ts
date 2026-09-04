@@ -52,23 +52,25 @@ export const NOTEBOOK = {
 export const SKETCHBOOK = {
   /** Union of both pages — used for nav placement / focus. */
   pageRect: {
-    left: 0.1816860465116279,
-    top: 0.14453125,
-    width: 0.627906976744186,
-    height: 0.7037760416666666,
+    left: 0.1711482558139535,
+    top: 0.11263020833333333,
+    width: 0.6540697674418605,
+    height: 0.7669270833333334,
   },
   leftPage: {
-    left: 0.1816860465116279,
-    top: 0.14453125,
-    width: 0.2768895348837209,
-    height: 0.7037760416666666,
+    left: 0.1711482558139535,
+    top: 0.11263020833333333,
+    width: 0.3223110465116279,
+    height: 0.7669270833333334,
   },
   rightPage: {
-    left: 0.5105377906976745,
-    top: 0.14453125,
-    width: 0.29905523255813954,
-    height: 0.7024739583333334,
+    left: 0.4941860465116279,
+    top: 0.11263020833333333,
+    width: 0.33103197674418605,
+    height: 0.7669270833333334,
   },
+  /** Rounded paper corners — fraction of rendered page height. */
+  pageRadiusRatio: 0.042,
   spreads: [
     {
       id: 'blank',

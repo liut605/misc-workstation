@@ -19,13 +19,28 @@ function rectStyle(r: { left: number; top: number; width: number; height: number
 export function SketchbookPages({ active }: SketchbookPagesProps) {
   const [index, setIndex] = useState(0)
   const [busy, setBusy] = useState(false)
+  const [radiusPx, setRadiusPx] = useState(28)
   const leafRef = useRef<HTMLDivElement>(null)
+  const measureRef = useRef<HTMLDivElement>(null)
 
   const spreads = SKETCHBOOK.spreads
   const last = spreads.length - 1
   const current = spreads[index]
   const next = spreads[Math.min(index + 1, last)]
-  const { leftPage, rightPage, pageRect } = SKETCHBOOK
+  const { leftPage, rightPage, pageRect, pageRadiusRatio } = SKETCHBOOK
+  const round = { borderRadius: `${radiusPx}px` }
+
+  useLayoutEffect(() => {
+    const el = measureRef.current
+    if (!el) return
+    const update = () => {
+      setRadiusPx(Math.max(16, el.getBoundingClientRect().height * pageRadiusRatio))
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [pageRadiusRatio, active])
 
   useLayoutEffect(() => {
     if (!active) {
@@ -110,11 +125,13 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
 
   return (
     <div className={`sketchbook-pages ${active ? 'is-active' : ''}`}>
-      {/* Absolute page plates sit on cream paper only — cover stays in the photo. */}
+      {/* Measure plate for corner radius that tracks rendered page height */}
       <div
+        ref={measureRef}
         className="page-plate page-plate--left"
         style={{
           ...rectStyle(leftPage),
+          ...round,
           backgroundImage: `url(${current.left})`,
         }}
         aria-hidden
@@ -123,6 +140,7 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
         className="page-plate page-plate--right page-plate--under"
         style={{
           ...rectStyle(rightPage),
+          ...round,
           backgroundImage: `url(${index < last ? next.right : current.right})`,
         }}
         aria-hidden
@@ -132,6 +150,7 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
         className="page-plate page-plate--right page-plate--hit"
         style={{
           ...rectStyle(rightPage),
+          ...round,
           backgroundImage: `url(${current.right})`,
         }}
         aria-label="Turn to next page"
@@ -141,20 +160,17 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
       <button
         type="button"
         className="page-plate page-plate--left page-plate--hit-prev"
-        style={rectStyle(leftPage)}
+        style={{ ...rectStyle(leftPage), ...round }}
         aria-label="Turn to previous page"
         disabled={!active || busy || index <= 0}
         onClick={turnBack}
       />
 
-      <div
-        className="page-leaf-stage"
-        style={rectStyle(rightPage)}
-      >
+      <div className="page-leaf-stage" style={{ ...rectStyle(rightPage), ...round }}>
         <div ref={leafRef} className="page-leaf" aria-hidden>
-          <div className="page-face page-face--front" />
-          <div className="page-face page-face--back" />
-          <div className="page-leaf__shade" />
+          <div className="page-face page-face--front" style={round} />
+          <div className="page-face page-face--back" style={round} />
+          <div className="page-leaf__shade" style={round} />
         </div>
       </div>
 
