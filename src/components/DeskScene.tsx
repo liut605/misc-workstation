@@ -119,10 +119,9 @@ export function DeskScene({
       const focusCx = focusBox.left + focusBox.width / 2
       const focusCy = focusBox.top + focusBox.height / 2
       // Origin stays fixed under scale/rotate; x/y then slides the spread to center.
-      // Slight upward bias counters rotateX foreshortening pulling the book down.
       const scale = NOTEBOOK.zoom.scale
       const dx = window.innerWidth / 2 - focusCx
-      const dy = window.innerHeight / 2 - focusCy - window.innerHeight * 0.02
+      const dy = window.innerHeight / 2 - focusCy
 
       const tl = gsap.timeline()
       sketchTlRef.current = tl
@@ -135,6 +134,20 @@ export function DeskScene({
         rotationY: NOTEBOOK.zoom.rotateY,
         duration: 1.25,
         ease: 'power2.inOut',
+        onComplete: () => {
+          // Recenter after 3D pitch settles — rotateX shifts the visual midpoint.
+          const box = focus.getBoundingClientRect()
+          const cx = box.left + box.width / 2
+          const cy = box.top + box.height / 2
+          const curX = Number(gsap.getProperty(scene, 'x'))
+          const curY = Number(gsap.getProperty(scene, 'y'))
+          gsap.to(scene, {
+            x: curX + (window.innerWidth / 2 - cx),
+            y: curY + (window.innerHeight / 2 - cy),
+            duration: 0.35,
+            ease: 'power2.out',
+          })
+        },
       })
     } else if (mode === 'room') {
       const currentScale = Number(gsap.getProperty(scene, 'scale'))
