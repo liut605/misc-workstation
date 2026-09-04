@@ -33,15 +33,17 @@ export const NOTEBOOK = {
   centerX: 0.265,
   centerY: 0.86,
   /**
-   * End-state camera: closer, higher (tilt toward overhead),
-   * rotated clockwise ~15° to square the book (near edge was ~−15°),
-   * with desk wood still framing the pages.
+   * End-state camera: overhead reading pose — book fills most of the
+   * viewport, wood desk still rings the pages. rotateZ squares the
+   * ~15° CCW tilt; rotateX pitches toward top-down; slight rotateY
+   * counters the left-of-monitor viewing angle in the still.
    */
   zoom: {
-    scale: 3.25,
-    rotateZ: 15,
-    rotateX: 30,
-    perspective: 1600,
+    scale: 5.1,
+    rotateZ: 16,
+    rotateX: 54,
+    rotateY: -10,
+    perspective: 1200,
   },
 } as const
 

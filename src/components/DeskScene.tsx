@@ -113,6 +113,7 @@ export function DeskScene({
         scale: 1,
         rotation: 0,
         rotationX: 0,
+        rotationY: 0,
       })
       const focusBox = focus.getBoundingClientRect()
       const focusCx = focusBox.left + focusBox.width / 2
@@ -121,7 +122,7 @@ export function DeskScene({
       // Slight upward bias counters rotateX foreshortening pulling the book down.
       const scale = NOTEBOOK.zoom.scale
       const dx = window.innerWidth / 2 - focusCx
-      const dy = window.innerHeight / 2 - focusCy - window.innerHeight * 0.04
+      const dy = window.innerHeight / 2 - focusCy - window.innerHeight * 0.02
 
       const tl = gsap.timeline()
       sketchTlRef.current = tl
@@ -131,7 +132,8 @@ export function DeskScene({
         scale,
         rotation: NOTEBOOK.zoom.rotateZ,
         rotationX: NOTEBOOK.zoom.rotateX,
-        duration: 1.2,
+        rotationY: NOTEBOOK.zoom.rotateY,
+        duration: 1.25,
         ease: 'power2.inOut',
       })
     } else if (mode === 'room') {
@@ -143,6 +145,7 @@ export function DeskScene({
           scale: 1,
           rotation: 0,
           rotationX: 0,
+          rotationY: 0,
         })
         return
       }
@@ -154,6 +157,7 @@ export function DeskScene({
         scale: 1,
         rotation: 0,
         rotationX: 0,
+        rotationY: 0,
         duration: 1.05,
         ease: 'power2.inOut',
       })
