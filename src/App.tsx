@@ -3,7 +3,6 @@ import gsap from 'gsap'
 import { DeskScene, type DeskMode } from './components/DeskScene'
 import { DesktopBrowser } from './components/DesktopBrowser'
 import { HomeView } from './components/HomeView'
-import { SCREEN_RECT } from './lib/config'
 import './App.css'
 
 type Mode = 'home' | 'desk' | 'desktop'
@@ -54,17 +53,10 @@ export default function App() {
     const morph = morphRef.current
     if (!morph) return
 
-    const screenAspect = SCREEN_RECT.width / SCREEN_RECT.height
-    const vh = window.innerHeight
+    // Morph must end at the true fullscreen desktop shell (100vw × 100dvh).
+    // Letterboxing here caused a hard jump when DesktopBrowser mounted full-bleed.
     const vw = window.innerWidth
-    let endW = vw
-    let endH = endW / screenAspect
-    if (endH > vh) {
-      endH = vh
-      endW = endH * screenAspect
-    }
-    const endL = (vw - endW) / 2
-    const endT = (vh - endH) / 2
+    const vh = window.innerHeight
 
     if (zoomDirection.current === 'in') {
       gsap.set(morph, {
@@ -80,16 +72,19 @@ export default function App() {
         onComplete: () => {
           setMode('desktop')
           setDeskMode('desktop')
-          gsap.set(morph, { display: 'none' })
+          // Keep morph up one frame so the browser can paint underneath, then hide.
+          requestAnimationFrame(() => {
+            gsap.set(morph, { display: 'none', opacity: 0 })
+          })
         },
       })
       tl.to(morph, {
-        left: endL,
-        top: endT,
-        width: endW,
-        height: endH,
+        left: 0,
+        top: 0,
+        width: vw,
+        height: vh,
         borderRadius: 0,
-        duration: 0.95,
+        duration: 1.05,
         ease: 'power3.inOut',
       })
       return () => {
@@ -99,17 +94,17 @@ export default function App() {
 
     gsap.set(morph, {
       display: 'block',
-      left: endL,
-      top: endT,
-      width: endW,
-      height: endH,
+      left: 0,
+      top: 0,
+      width: vw,
+      height: vh,
       opacity: 1,
       borderRadius: 0,
     })
     const tl = gsap.timeline({
       onComplete: () => {
         setDeskMode('room')
-        gsap.set(morph, { display: 'none' })
+        gsap.set(morph, { display: 'none', opacity: 0 })
       },
     })
     tl.to(morph, {
@@ -118,7 +113,7 @@ export default function App() {
       width: fromRect.width,
       height: fromRect.height,
       borderRadius: 2,
-      duration: 0.85,
+      duration: 0.9,
       ease: 'power3.inOut',
     })
     return () => {

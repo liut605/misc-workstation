@@ -16,10 +16,9 @@ export function DesktopBrowser({ active, onExit }: DesktopBrowserProps) {
 
   useEffect(() => {
     if (!shellRef.current) return
-    gsap.to(shellRef.current, {
+    // Appear instantly when active so the morph→desktop handoff does not flash/jump.
+    gsap.set(shellRef.current, {
       opacity: active ? 1 : 0,
-      duration: active ? 0.2 : 0.15,
-      ease: 'power1.out',
       pointerEvents: active ? 'auto' : 'none',
     })
   }, [active])

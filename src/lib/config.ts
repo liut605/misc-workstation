@@ -51,11 +51,12 @@ export const NOTEBOOK = {
  * replace art when real pages arrive — turn animation stays the same.
  */
 export const SKETCHBOOK = {
+  /** Cream paper only — excludes khaki cover border around the spread. */
   pageRect: {
-    left: 0.16569767441860464,
-    top: 0.11393229166666667,
-    width: 0.6587936046511628,
-    height: 0.7643229166666666,
+    left: 0.19949127906976744,
+    top: 0.15364583333333334,
+    width: 0.5882994186046512,
+    height: 0.685546875,
   },
   spreads: [
     {

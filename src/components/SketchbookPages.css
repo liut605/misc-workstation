@@ -29,6 +29,9 @@
   background-position: center;
   border: 0;
   padding: 0;
+  /* Soft clip so cover fringe never peeks from page faces */
+  overflow: hidden;
+  background-color: #f3eee6;
 }
 
 .page-half--left {

@@ -12,13 +12,13 @@
 
 .screen-morph {
   position: fixed;
-  z-index: 45;
+  z-index: 55;
   overflow: hidden;
   pointer-events: none;
-  background: transparent;
+  background: #f4f4f6;
 }
 
-.screen-morph-img {
+.screen-morph__img {
   display: block;
   width: 100%;
   height: 100%;
