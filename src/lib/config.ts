@@ -45,6 +45,42 @@ export const NOTEBOOK = {
   },
 } as const
 
+/**
+ * Top-down sketchbook reader (image-normalized page rect inside
+ * `public/sketchbook-overhead.jpg`). Spreads are left/right page faces;
+ * replace art when real pages arrive — turn animation stays the same.
+ */
+export const SKETCHBOOK = {
+  pageRect: {
+    left: 0.16569767441860464,
+    top: 0.11393229166666667,
+    width: 0.6587936046511628,
+    height: 0.7643229166666666,
+  },
+  spreads: [
+    {
+      id: 'blank',
+      left: '/sketchbook-spread-0-left.jpg',
+      right: '/sketchbook-spread-0-right.jpg',
+    },
+    {
+      id: 'circles',
+      left: '/sketchbook-spread-1-left.jpg',
+      right: '/sketchbook-spread-1-right.jpg',
+    },
+    {
+      id: 'plant',
+      left: '/sketchbook-spread-2-left.jpg',
+      right: '/sketchbook-spread-2-right.jpg',
+    },
+    {
+      id: 'portrait',
+      left: '/sketchbook-spread-3-left.jpg',
+      right: '/sketchbook-spread-3-right.jpg',
+    },
+  ],
+} as const
+
 export type AppTab = {
   id: string
   label: string

@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { DESK_IMAGE, NOTEBOOK, SCREEN_RECT } from '../lib/config'
+import { SketchbookPages } from './SketchbookPages'
 import './DeskScene.css'
 
 const IMG_W = DESK_IMAGE.width
@@ -300,6 +301,7 @@ export function DeskScene({
           alt=""
           draggable={false}
         />
+        <SketchbookPages active={inSketchbook} />
       </div>
 
       {showChrome && hintVisible && (
