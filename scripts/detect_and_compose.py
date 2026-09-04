@@ -95,66 +95,53 @@ def detect_screen(img: Image.Image) -> tuple[int, int, int, int]:
 
 
 def compose_browser_idle(out_path: Path, content_path: Path) -> None:
+    """Compose idle monitor art: tabs + close only (no traffic lights / URL bar)."""
     content = Image.open(content_path).convert("RGB")
-    # Target a crisp browser window roughly matching content AR
     cw, ch = content.size
-    chrome_h = 86
-    tab_h = 36
-    url_h = 40
-    top_chrome = tab_h + url_h  # ~76, plus padding -> 86
-    pad = 1
-    win_w = max(1200, cw)
-    # Scale content to window width
+    tab_h = 44
+    win_w = 1400
     scale = win_w / cw
     content_h = int(ch * scale)
     content_resized = content.resize((win_w, content_h), Image.Resampling.LANCZOS)
-    win_h = top_chrome + content_h
+    win_h = tab_h + content_h
 
-    img = Image.new("RGB", (win_w, win_h), (236, 236, 236))
+    img = Image.new("RGB", (win_w, win_h), (236, 236, 239))
     draw = ImageDraw.Draw(img)
+    draw.rectangle([0, 0, win_w, tab_h], fill=(240, 240, 243))
 
-    # Traffic lights
-    for i, color in enumerate([(255, 95, 87), (255, 189, 46), (40, 200, 64)]):
-        x = 14 + i * 20
-        draw.ellipse([x, 12, x + 12, 24], fill=color)
-
-    # Tabs
-    tabs = [("Rooted NYC", True), ("String of Pearls", False), ("New Tab", False)]
-    tx = 90
     try:
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 13)
-        font_sm = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
     except Exception:
         font = ImageFont.load_default()
-        font_sm = font
 
+    tabs = [
+        ("Rooted NYC", True),
+        ("String of Pearls", False),
+        ("Studio Notes", False),
+        ("New Tab", False),
+    ]
+    tx = 12
     for label, active in tabs:
-        tw = 130 if label != "String of Pearls" else 150
-        y0 = 6
-        color = (255, 255, 255) if active else (220, 220, 220)
-        draw.rounded_rectangle([tx, y0, tx + tw, tab_h], radius=8, fill=color)
-        draw.text((tx + 14, y0 + 10), label, fill=(50, 50, 50), font=font_sm)
+        tw = max(110, int(draw.textlength(label, font=font) + 28))
+        y0 = 10
+        fill = (255, 255, 255) if active else (228, 228, 232)
+        draw.rounded_rectangle([tx, y0, tx + tw, tab_h], radius=8, fill=fill)
+        draw.text(
+            (tx + 14, y0 + 9),
+            label,
+            fill=(29, 29, 31) if active else (107, 107, 112),
+            font=font,
+        )
         tx += tw + 4
 
-    # URL bar row
-    draw.rectangle([0, tab_h, win_w, top_chrome], fill=(245, 245, 245))
-    # back/forward/refresh circles
-    for i in range(3):
-        x = 16 + i * 28
-        draw.ellipse([x, tab_h + 10, x + 20, tab_h + 30], outline=(180, 180, 180), width=1)
-    # URL field
-    url_left, url_right = 110, win_w - 40
-    draw.rounded_rectangle(
-        [url_left, tab_h + 8, url_right, tab_h + 34],
-        radius=10,
-        fill=(255, 255, 255),
-        outline=(210, 210, 210),
-    )
-    draw.text((url_left + 16, tab_h + 13), "https://rooted-nyc.tsingliu.info/", fill=(40, 40, 40), font=font)
+    # Close X (top-right), matching live DesktopBrowser chrome
+    cx, cy = win_w - 24, 22
+    draw.line([(cx - 6, cy - 6), (cx + 6, cy + 6)], fill=(92, 92, 98), width=2)
+    draw.line([(cx + 6, cy - 6), (cx - 6, cy + 6)], fill=(92, 92, 98), width=2)
+    draw.line([(0, tab_h - 1), (win_w, tab_h - 1)], fill=(220, 220, 224), width=1)
 
-    # Content
-    img.paste(content_resized, (0, top_chrome))
-    img.save(out_path, quality=92)
+    img.paste(content_resized, (0, tab_h))
+    img.save(out_path, quality=92, optimize=True)
     print(f"wrote {out_path} size={img.size}")
 
 
