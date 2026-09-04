@@ -7,6 +7,15 @@ type SketchbookPagesProps = {
   active: boolean
 }
 
+function rectStyle(r: { left: number; top: number; width: number; height: number }) {
+  return {
+    left: `${r.left * 100}%`,
+    top: `${r.top * 100}%`,
+    width: `${r.width * 100}%`,
+    height: `${r.height * 100}%`,
+  }
+}
+
 export function SketchbookPages({ active }: SketchbookPagesProps) {
   const [index, setIndex] = useState(0)
   const [busy, setBusy] = useState(false)
@@ -16,7 +25,7 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
   const last = spreads.length - 1
   const current = spreads[index]
   const next = spreads[Math.min(index + 1, last)]
-  const { left, top, width, height } = SKETCHBOOK.pageRect
+  const { leftPage, rightPage, pageRect } = SKETCHBOOK
 
   useLayoutEffect(() => {
     if (!active) {
@@ -36,12 +45,8 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
 
     const front = leaf.querySelector<HTMLElement>('.page-face--front')
     const back = leaf.querySelector<HTMLElement>('.page-face--back')
-    if (front) {
-      front.style.backgroundImage = `url(${spreads[index].right})`
-    }
-    if (back) {
-      back.style.backgroundImage = `url(${spreads[index + 1].left})`
-    }
+    if (front) front.style.backgroundImage = `url(${spreads[index].right})`
+    if (back) back.style.backgroundImage = `url(${spreads[index + 1].left})`
 
     gsap.set(leaf, {
       rotationY: 0,
@@ -68,12 +73,8 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
 
     const front = leaf.querySelector<HTMLElement>('.page-face--front')
     const back = leaf.querySelector<HTMLElement>('.page-face--back')
-    if (front) {
-      front.style.backgroundImage = `url(${spreads[index - 1].right})`
-    }
-    if (back) {
-      back.style.backgroundImage = `url(${spreads[index].left})`
-    }
+    if (front) front.style.backgroundImage = `url(${spreads[index - 1].right})`
+    if (back) back.style.backgroundImage = `url(${spreads[index].left})`
 
     gsap.set(leaf, {
       rotationY: -180,
@@ -109,42 +110,47 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
 
   return (
     <div className={`sketchbook-pages ${active ? 'is-active' : ''}`}>
+      {/* Absolute page plates sit on cream paper only — cover stays in the photo. */}
       <div
-        className="sketchbook-pages__stage"
+        className="page-plate page-plate--left"
         style={{
-          left: `${left * 100}%`,
-          top: `${top * 100}%`,
-          width: `${width * 100}%`,
-          height: `${height * 100}%`,
+          ...rectStyle(leftPage),
+          backgroundImage: `url(${current.left})`,
         }}
+        aria-hidden
+      />
+      <div
+        className="page-plate page-plate--right page-plate--under"
+        style={{
+          ...rectStyle(rightPage),
+          backgroundImage: `url(${index < last ? next.right : current.right})`,
+        }}
+        aria-hidden
+      />
+      <button
+        type="button"
+        className="page-plate page-plate--right page-plate--hit"
+        style={{
+          ...rectStyle(rightPage),
+          backgroundImage: `url(${current.right})`,
+        }}
+        aria-label="Turn to next page"
+        disabled={!active || busy || index >= last}
+        onClick={turnForward}
+      />
+      <button
+        type="button"
+        className="page-plate page-plate--left page-plate--hit-prev"
+        style={rectStyle(leftPage)}
+        aria-label="Turn to previous page"
+        disabled={!active || busy || index <= 0}
+        onClick={turnBack}
+      />
+
+      <div
+        className="page-leaf-stage"
+        style={rectStyle(rightPage)}
       >
-        <div
-          className="page-half page-half--left"
-          style={{ backgroundImage: `url(${current.left})` }}
-          aria-hidden
-        />
-        <div
-          className="page-half page-half--right page-half--under"
-          style={{
-            backgroundImage: `url(${index < last ? next.right : current.right})`,
-          }}
-          aria-hidden
-        />
-        <button
-          type="button"
-          className="page-half page-half--right page-half--hit"
-          style={{ backgroundImage: `url(${current.right})` }}
-          aria-label="Turn to next page"
-          disabled={!active || busy || index >= last}
-          onClick={turnForward}
-        />
-        <button
-          type="button"
-          className="page-half page-half--left page-half--hit-prev"
-          aria-label="Turn to previous page"
-          disabled={!active || busy || index <= 0}
-          onClick={turnBack}
-        />
         <div ref={leafRef} className="page-leaf" aria-hidden>
           <div className="page-face page-face--front" />
           <div className="page-face page-face--back" />
@@ -152,7 +158,13 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
         </div>
       </div>
 
-      <div className="sketchbook-pages__nav">
+      <div
+        className="sketchbook-pages__nav"
+        style={{
+          left: `${(pageRect.left + pageRect.width / 2) * 100}%`,
+          top: `${(pageRect.top + pageRect.height) * 100}%`,
+        }}
+      >
         <button
           type="button"
           className="sketchbook-nav-btn"

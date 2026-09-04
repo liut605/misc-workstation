@@ -12,68 +12,54 @@
   opacity: 1;
 }
 
-.sketchbook-pages__stage {
+.page-plate {
   position: absolute;
-  perspective: 2200px;
-  perspective-origin: 50% 50%;
-  transform-style: preserve-3d;
-}
-
-.page-half {
-  position: absolute;
-  top: 0;
-  width: 50%;
-  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background-color: #f2ebe3;
   background-size: 100% 100%;
   background-repeat: no-repeat;
   background-position: center;
-  border: 0;
-  padding: 0;
-  /* Soft clip so cover fringe never peeks from page faces */
   overflow: hidden;
-  background-color: #f3eee6;
+  border-radius: 2px;
 }
 
-.page-half--left {
-  left: 0;
-}
-
-.page-half--right {
-  left: 50%;
-}
-
-.page-half--under {
+.page-plate--under {
   z-index: 1;
 }
 
-.page-half--hit {
+.page-plate--hit {
   z-index: 2;
   cursor: pointer;
-  background-color: transparent;
 }
 
-.page-half--hit:disabled {
+.page-plate--hit:disabled {
   cursor: default;
 }
 
-.page-half--hit-prev {
+.page-plate--hit-prev {
   z-index: 3;
-  left: 0;
-  background: transparent;
+  background-color: transparent;
+  background-image: none !important;
   cursor: pointer;
 }
 
-.page-half--hit-prev:disabled {
+.page-plate--hit-prev:disabled {
   cursor: default;
+}
+
+.page-leaf-stage {
+  position: absolute;
+  z-index: 4;
+  perspective: 2200px;
+  perspective-origin: left center;
+  pointer-events: none;
 }
 
 .page-leaf {
   position: absolute;
-  top: 0;
-  left: 50%;
-  width: 50%;
-  height: 100%;
-  z-index: 4;
+  inset: 0;
   transform-style: preserve-3d;
   transform-origin: left center;
   visibility: hidden;
@@ -88,16 +74,14 @@
   background-size: 100% 100%;
   background-repeat: no-repeat;
   background-position: center;
-  box-shadow: inset 0 0 24px rgba(40, 30, 20, 0.06);
-}
-
-.page-face--front {
-  background-color: #f7f2ea;
+  background-color: #f2ebe3;
+  box-shadow: inset 0 0 24px rgba(40, 30, 20, 0.05);
+  border-radius: 2px;
+  overflow: hidden;
 }
 
 .page-face--back {
   transform: rotateY(180deg);
-  background-color: #f3eee6;
 }
 
 .page-leaf__shade {
@@ -105,9 +89,10 @@
   inset: 0;
   z-index: 2;
   pointer-events: none;
+  border-radius: 2px;
   background: linear-gradient(
     90deg,
-    rgba(40, 28, 18, 0.18) 0%,
+    rgba(40, 28, 18, 0.16) 0%,
     rgba(40, 28, 18, 0.02) 18%,
     transparent 42%
   );
@@ -118,9 +103,7 @@
 
 .sketchbook-pages__nav {
   position: absolute;
-  left: 50%;
-  bottom: 18px;
-  transform: translateX(-50%);
+  transform: translate(-50%, 14px);
   display: flex;
   align-items: center;
   gap: 12px;

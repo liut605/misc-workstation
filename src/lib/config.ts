@@ -46,17 +46,28 @@ export const NOTEBOOK = {
 } as const
 
 /**
- * Top-down sketchbook reader (image-normalized page rect inside
- * `public/sketchbook-overhead.jpg`). Spreads are left/right page faces;
- * replace art when real pages arrive — turn animation stays the same.
+ * Top-down sketchbook reader. Page faces are cream paper only (no khaki cover).
+ * `leftPage` / `rightPage` are image-normalized rects inside the overhead still.
  */
 export const SKETCHBOOK = {
-  /** Cream paper only — excludes khaki cover border around the spread. */
+  /** Union of both pages — used for nav placement / focus. */
   pageRect: {
-    left: 0.19949127906976744,
-    top: 0.15364583333333334,
-    width: 0.5882994186046512,
-    height: 0.685546875,
+    left: 0.1816860465116279,
+    top: 0.14453125,
+    width: 0.627906976744186,
+    height: 0.7037760416666666,
+  },
+  leftPage: {
+    left: 0.1816860465116279,
+    top: 0.14453125,
+    width: 0.2768895348837209,
+    height: 0.7037760416666666,
+  },
+  rightPage: {
+    left: 0.5105377906976745,
+    top: 0.14453125,
+    width: 0.29905523255813954,
+    height: 0.7024739583333334,
   },
   spreads: [
     {
