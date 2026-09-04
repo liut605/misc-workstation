@@ -9,7 +9,7 @@ type DesktopBrowserProps = {
 }
 
 export function DesktopBrowser({ active, onExit }: DesktopBrowserProps) {
-  const [tabs, setTabs] = useState(BROWSER_TABS)
+  const [tabs] = useState(BROWSER_TABS)
   const [activeId, setActiveId] = useState(BROWSER_TABS[0].id)
   const shellRef = useRef<HTMLDivElement>(null)
   const activeTab = tabs.find((t) => t.id === activeId) ?? tabs[0]
@@ -50,12 +50,6 @@ export function DesktopBrowser({ active, onExit }: DesktopBrowserProps) {
                 tab={tab}
                 selected={tab.id === activeId}
                 onSelect={() => setActiveId(tab.id)}
-                onClose={() => {
-                  if (tabs.length <= 1) return
-                  const next = tabs.filter((t) => t.id !== tab.id)
-                  setTabs(next)
-                  if (activeId === tab.id) setActiveId(next[0].id)
-                }}
               />
             ))}
           </div>
@@ -105,33 +99,20 @@ function TabButton({
   tab,
   selected,
   onSelect,
-  onClose,
 }: {
   tab: AppTab
   selected: boolean
   onSelect: () => void
-  onClose: () => void
 }) {
   return (
-    <div
+    <button
+      type="button"
       className={`tab ${selected ? 'is-active' : ''}`}
       role="tab"
       aria-selected={selected}
+      onClick={onSelect}
     >
-      <button type="button" className="tab-main" onClick={onSelect}>
-        {tab.label}
-      </button>
-      <button
-        type="button"
-        className="tab-close"
-        aria-label={`Close ${tab.label}`}
-        onClick={(e) => {
-          e.stopPropagation()
-          onClose()
-        }}
-      >
-        ×
-      </button>
-    </div>
+      <span className="tab-main">{tab.label}</span>
+    </button>
   )
 }
