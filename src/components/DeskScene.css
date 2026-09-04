@@ -3,6 +3,10 @@
   width: 100vw;
   height: 100dvh;
   overflow: hidden;
+  background: #cfc4b6;
+}
+
+.desk-view.is-zoomed {
   background: #1a1a1a;
 }
 
@@ -14,15 +18,19 @@
 
 .desk-scene {
   position: absolute;
+  /* Temporary pre-JS size: fill width, crop bottom */
   top: 0;
   left: 0;
+  width: 100vw;
+  height: calc(100vw * 1686 / 2528);
   will-change: width, height, top, left;
 }
 
 .desk-photo {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: fill;
   user-select: none;
   -webkit-user-drag: none;
 }
