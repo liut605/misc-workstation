@@ -49,10 +49,15 @@ export const NOTEBOOK = {
 } as const
 
 /**
- * Top-down sketchbook reader. Page faces are cream paper only (no khaki cover).
- * `leftPage` / `rightPage` are image-normalized rects inside the overhead still.
+ * Top-down sketchbook reader.
+ * Silhouettes come from manual full-frame PNG masks (same size as overhead).
+ * Auto-cropped page JPGs have been removed.
  */
 export const SKETCHBOOK = {
+  /** Full-frame manual left mask aligned to sketchbook-overhead.jpg (1376×768). */
+  leftMask: '/sketchbook-mask-left.png',
+  /** Set when the right-page mask is uploaded. */
+  rightMask: null as string | null,
   /** Union of both pages — used for nav placement / focus. */
   pageRect: {
     left: 0.20784883720930233,
@@ -67,36 +72,13 @@ export const SKETCHBOOK = {
     width: 0.2936046511627907,
     height: 0.7786458333333334,
   },
+  /** Approximate right plate until the right mask arrives. */
   rightPage: {
-    left: 0.4796511627906977,
-    top: 0.11458333333333333,
-    width: 0.3132267441860465,
-    height: 0.7708333333333334,
+    left: 0.501453488372093,
+    top: 0.109375,
+    width: 0.2914244186046512,
+    height: 0.7786458333333334,
   },
-  /** 0 = sharp corners; silhouette comes from PNG alpha masks. */
-  pageRadiusRatio: 0,
-  spreads: [
-    {
-      id: 'blank',
-      left: '/sketchbook-spread-0-left.png',
-      right: '/sketchbook-spread-0-right.jpg',
-    },
-    {
-      id: 'circles',
-      left: '/sketchbook-spread-1-left.png',
-      right: '/sketchbook-spread-1-right.jpg',
-    },
-    {
-      id: 'plant',
-      left: '/sketchbook-spread-2-left.png',
-      right: '/sketchbook-spread-2-right.jpg',
-    },
-    {
-      id: 'portrait',
-      left: '/sketchbook-spread-3-left.png',
-      right: '/sketchbook-spread-3-right.jpg',
-    },
-  ],
 } as const
 
 export type AppTab = {
