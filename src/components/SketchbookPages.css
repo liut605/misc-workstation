@@ -17,11 +17,12 @@
   margin: 0;
   padding: 0;
   border: 0;
-  background-color: #f2ebe3;
+  /* Transparent so PNG alpha masks (manual page cutouts) show clean edges. */
+  background-color: transparent;
   background-size: 100% 100%;
   background-repeat: no-repeat;
   background-position: center;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .page-plate--under {
@@ -73,10 +74,9 @@
   background-size: 100% 100%;
   background-repeat: no-repeat;
   background-position: center;
-  background-color: #f2ebe3;
-  box-shadow: inset 0 0 24px rgba(40, 30, 20, 0.05);
-  border-radius: 2px;
-  overflow: hidden;
+  background-color: transparent;
+  border-radius: 0;
+  overflow: visible;
 }
 
 .page-face--back {

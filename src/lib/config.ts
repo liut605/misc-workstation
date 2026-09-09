@@ -55,16 +55,17 @@ export const NOTEBOOK = {
 export const SKETCHBOOK = {
   /** Union of both pages — used for nav placement / focus. */
   pageRect: {
-    left: 0.20130813953488372,
-    top: 0.11458333333333333,
-    width: 0.5915697674418605,
-    height: 0.7708333333333334,
+    left: 0.20784883720930233,
+    top: 0.109375,
+    width: 0.5850290697674418,
+    height: 0.7786458333333334,
   },
+  /** From manual left-page mask alpha bbox on the 1376×768 overhead. */
   leftPage: {
-    left: 0.20130813953488372,
-    top: 0.11458333333333333,
-    width: 0.2768895348837209,
-    height: 0.7708333333333334,
+    left: 0.20784883720930233,
+    top: 0.109375,
+    width: 0.2936046511627907,
+    height: 0.7786458333333334,
   },
   rightPage: {
     left: 0.4796511627906977,
@@ -72,27 +73,27 @@ export const SKETCHBOOK = {
     width: 0.3132267441860465,
     height: 0.7708333333333334,
   },
-  /** 0 = sharp corners (this overhead has square page corners). */
+  /** 0 = sharp corners; silhouette comes from PNG alpha masks. */
   pageRadiusRatio: 0,
   spreads: [
     {
       id: 'blank',
-      left: '/sketchbook-spread-0-left.jpg',
+      left: '/sketchbook-spread-0-left.png',
       right: '/sketchbook-spread-0-right.jpg',
     },
     {
       id: 'circles',
-      left: '/sketchbook-spread-1-left.jpg',
+      left: '/sketchbook-spread-1-left.png',
       right: '/sketchbook-spread-1-right.jpg',
     },
     {
       id: 'plant',
-      left: '/sketchbook-spread-2-left.jpg',
+      left: '/sketchbook-spread-2-left.png',
       right: '/sketchbook-spread-2-right.jpg',
     },
     {
       id: 'portrait',
-      left: '/sketchbook-spread-3-left.jpg',
+      left: '/sketchbook-spread-3-left.png',
       right: '/sketchbook-spread-3-right.jpg',
     },
   ],
