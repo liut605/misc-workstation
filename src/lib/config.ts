@@ -41,7 +41,9 @@ export const NOTEBOOK = {
    * Legacy 2D dolly kept only as a no-video fallback.
    */
   zoomVideo: '/sketchbook-zoom.mp4',
-  /** Start crossfade to overhead this many seconds before clip end. */
+  /** Playback rate for zoom in/out clip (2 = twice real-time). */
+  zoomPlaybackRate: 2,
+  /** Start crossfade to overhead this many seconds before clip end (media time). */
   zoomHandoffLead: 0.35,
   zoom: {
     scale: 4.0,

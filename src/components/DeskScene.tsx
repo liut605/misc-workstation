@@ -57,11 +57,12 @@ function coverLayout(vw: number, vh: number) {
 function playVideoReverse(
   video: HTMLVideoElement,
   onDone: () => void,
+  rate = 1,
 ): () => void {
   let cancelled = false
   let raf = 0
   const fps = 30
-  const step = 1 / fps
+  const step = (1 / fps) * Math.max(0.25, rate)
   let last = performance.now()
 
   const tick = (now: number) => {
@@ -230,6 +231,7 @@ export function DeskScene({
       if (hasVideo && video) {
         setVideoPlaying(true)
         gsap.set(video, { autoAlpha: 1 })
+        video.playbackRate = NOTEBOOK.zoomPlaybackRate
         video.currentTime = 0
         const lead = NOTEBOOK.zoomHandoffLead
         let handedOff = false
@@ -323,7 +325,11 @@ export function DeskScene({
         const startReverse = () => {
           setVideoPlaying(true)
           gsap.set(video, { autoAlpha: 1 })
-          reverseCancelRef.current = playVideoReverse(video, finishExit)
+          reverseCancelRef.current = playVideoReverse(
+            video,
+            finishExit,
+            NOTEBOOK.zoomPlaybackRate,
+          )
         }
 
         const overheadVisible =
