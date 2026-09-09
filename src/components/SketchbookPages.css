@@ -22,8 +22,27 @@
   isolation: isolate;
 }
 
+.sketchbook-preload {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .page-plate--under {
   z-index: 1;
+}
+
+.page-plate--under-next {
+  z-index: 0;
+}
+
+.page-plate--preload-left,
+.page-plate--preload-right {
+  z-index: 0;
+  visibility: hidden;
 }
 
 .page-plate--hit {

@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { SKETCHBOOK } from '../lib/config'
 import './SketchbookPages.css'
@@ -31,6 +31,21 @@ function PageArt({ paper, drawing }: { paper: string; drawing: string }) {
   )
 }
 
+function preloadUrls(urls: string[]) {
+  return Promise.all(
+    urls.map(
+      (src) =>
+        new Promise<void>((resolve) => {
+          const img = new Image()
+          img.onload = () => resolve()
+          img.onerror = () => resolve()
+          img.src = src
+          void img.decode?.().then(() => resolve()).catch(() => resolve())
+        }),
+    ),
+  )
+}
+
 /**
  * Interactive sketchbook: blank masked plates + multiply drawings + GSAP flip.
  */
@@ -42,8 +57,20 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
   const spreads = SKETCHBOOK.spreads
   const last = spreads.length - 1
   const current = spreads[index]
-  const peek = spreads[Math.min(index + 1, last)]
+  const nextSpread = spreads[Math.min(index + 1, last)]
+  const prevSpread = spreads[Math.max(index - 1, 0)]
   const { leftPage, rightPage, pageRect, blankLeft, blankRight } = SKETCHBOOK
+
+  const allDrawingUrls = useMemo(
+    () => spreads.flatMap((s) => [s.left, s.right]),
+    [spreads],
+  )
+
+  // Warm both pages of every spread (plus blank plates) as soon as the book opens.
+  useEffect(() => {
+    if (!active) return
+    void preloadUrls([blankLeft, blankRight, ...allDrawingUrls])
+  }, [active, blankLeft, blankRight, allDrawingUrls])
 
   useLayoutEffect(() => {
     if (!active) {
@@ -128,9 +155,19 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
 
   return (
     <div className={`sketchbook-pages ${active ? 'is-active' : ''}`}>
+      {/* Keep every spread page decoded so both sides are ready before flips. */}
+      <div className="sketchbook-preload" aria-hidden>
+        {allDrawingUrls.map((src) => (
+          <img key={src} src={src} alt="" />
+        ))}
+        <img src={blankLeft} alt="" />
+        <img src={blankRight} alt="" />
+      </div>
+
       <div className="page-plate page-plate--left" style={rectStyle(leftPage)} aria-hidden>
         <PageArt paper={blankLeft} drawing={current.left} />
       </div>
+      {/* Under the flipping leaf: next spread’s right (or current if last). */}
       <div
         className="page-plate page-plate--right page-plate--under"
         style={rectStyle(rightPage)}
@@ -138,9 +175,45 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
       >
         <PageArt
           paper={blankRight}
-          drawing={index < last ? peek.right : current.right}
+          drawing={index < last ? nextSpread.right : current.right}
         />
       </div>
+      {/* Also keep current right mounted so both pages of this spread stay warm. */}
+      <div
+        className="page-plate page-plate--right page-plate--preload-right"
+        style={rectStyle(rightPage)}
+        aria-hidden
+      >
+        <PageArt paper={blankRight} drawing={current.right} />
+      </div>
+      <div
+        className="page-plate page-plate--left page-plate--preload-left"
+        style={rectStyle(leftPage)}
+        aria-hidden
+      >
+        <PageArt
+          paper={blankLeft}
+          drawing={index < last ? nextSpread.left : current.left}
+        />
+      </div>
+      {index > 0 && (
+        <div
+          className="page-plate page-plate--left page-plate--preload-left"
+          style={rectStyle(leftPage)}
+          aria-hidden
+        >
+          <PageArt paper={blankLeft} drawing={prevSpread.left} />
+        </div>
+      )}
+      {index > 0 && (
+        <div
+          className="page-plate page-plate--right page-plate--preload-right"
+          style={rectStyle(rightPage)}
+          aria-hidden
+        >
+          <PageArt paper={blankRight} drawing={prevSpread.right} />
+        </div>
+      )}
       <button
         type="button"
         className="page-plate page-plate--right page-plate--hit"
@@ -166,7 +239,10 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
             <PageArt paper={blankRight} drawing={current.right} />
           </div>
           <div className="page-face page-face--back">
-            <PageArt paper={blankLeft} drawing={peek.left} />
+            <PageArt
+              paper={blankLeft}
+              drawing={index < last ? nextSpread.left : current.left}
+            />
           </div>
           <div className="page-leaf__shade" />
         </div>
