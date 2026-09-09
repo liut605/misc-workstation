@@ -15,33 +15,29 @@ function rectStyle(r: { left: number; top: number; width: number; height: number
 }
 
 /**
- * Overlay manual page masks on the overhead still.
- * Page-turn content waits until both left + right masks (and art) are ready.
+ * Overlay manual left + right page masks on the overhead still.
+ * Page-turn art can layer on these plates next.
  */
 export function SketchbookPages({ active }: SketchbookPagesProps) {
   const { leftMask, rightMask, leftPage, rightPage, pageRect } = SKETCHBOOK
 
   return (
     <div className={`sketchbook-pages ${active ? 'is-active' : ''}`}>
-      {/* Full-frame masks — pixel-aligned to overhead (1376×768). */}
       <img
         className="page-mask page-mask--left"
-        src={`${leftMask}?v=manual`}
+        src={`${leftMask}?v=2`}
         alt=""
         draggable={false}
         aria-hidden
       />
-      {rightMask && (
-        <img
-          className="page-mask page-mask--right"
-          src={`${rightMask}?v=manual`}
-          alt=""
-          draggable={false}
-          aria-hidden
-        />
-      )}
+      <img
+        className="page-mask page-mask--right"
+        src={`${rightMask}?v=2`}
+        alt=""
+        draggable={false}
+        aria-hidden
+      />
 
-      {/* Hit areas only — no auto-cropped plate art. */}
       <button
         type="button"
         className="page-hit page-hit--left"
@@ -64,9 +60,7 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
           top: `${(pageRect.top + pageRect.height) * 100}%`,
         }}
       >
-        <span className="sketchbook-pages__count">
-          {rightMask ? 'Ready for page art' : 'Waiting for right-page mask'}
-        </span>
+        <span className="sketchbook-pages__count">Both page masks loaded</span>
       </div>
     </div>
   )

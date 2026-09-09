@@ -54,30 +54,29 @@ export const NOTEBOOK = {
  * Auto-cropped page JPGs have been removed.
  */
 export const SKETCHBOOK = {
-  /** Full-frame manual left mask aligned to sketchbook-overhead.jpg (1376×768). */
+  /** Full-frame manual masks aligned to sketchbook-overhead.jpg (1376×768). */
   leftMask: '/sketchbook-mask-left.png',
-  /** Set when the right-page mask is uploaded. */
-  rightMask: null as string | null,
+  rightMask: '/sketchbook-mask-right.png',
   /** Union of both pages — used for nav placement / focus. */
   pageRect: {
     left: 0.20784883720930233,
     top: 0.109375,
-    width: 0.5850290697674418,
-    height: 0.7786458333333334,
+    width: 0.5872093023255813,
+    height: 0.7799479166666666,
   },
-  /** From manual left-page mask alpha bbox on the 1376×768 overhead. */
+  /** From manual left-page mask alpha bbox. */
   leftPage: {
     left: 0.20784883720930233,
     top: 0.109375,
     width: 0.2936046511627907,
     height: 0.7786458333333334,
   },
-  /** Approximate right plate until the right mask arrives. */
+  /** From manual right-page mask alpha bbox. */
   rightPage: {
-    left: 0.501453488372093,
-    top: 0.109375,
-    width: 0.2914244186046512,
-    height: 0.7786458333333334,
+    left: 0.5,
+    top: 0.11328125,
+    width: 0.29505813953488375,
+    height: 0.7760416666666666,
   },
 } as const
 
