@@ -1,3 +1,5 @@
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import gsap from 'gsap'
 import { SKETCHBOOK } from '../lib/config'
 import './SketchbookPages.css'
 
@@ -15,43 +17,146 @@ function rectStyle(r: { left: number; top: number; width: number; height: number
 }
 
 /**
- * Overlay manual left + right page masks on the overhead still.
- * Page-turn art can layer on these plates next.
+ * Interactive sketchbook: masked page plates + spine-hinged GSAP flip.
  */
 export function SketchbookPages({ active }: SketchbookPagesProps) {
-  const { leftMask, rightMask, leftPage, rightPage, pageRect } = SKETCHBOOK
+  const [index, setIndex] = useState(0)
+  const [busy, setBusy] = useState(false)
+  const leafRef = useRef<HTMLDivElement>(null)
+
+  const spreads = SKETCHBOOK.spreads
+  const last = spreads.length - 1
+  const current = spreads[index]
+  const next = spreads[Math.min(index + 1, last)]
+  const { leftPage, rightPage, pageRect } = SKETCHBOOK
+
+  useLayoutEffect(() => {
+    if (!active) {
+      setIndex(0)
+      setBusy(false)
+      if (leafRef.current) {
+        gsap.set(leafRef.current, { rotationY: 0, autoAlpha: 0 })
+      }
+    }
+  }, [active])
+
+  const turnForward = useCallback(() => {
+    if (!active || busy || index >= last) return
+    const leaf = leafRef.current
+    if (!leaf) return
+    setBusy(true)
+
+    const front = leaf.querySelector<HTMLElement>('.page-face--front')
+    const back = leaf.querySelector<HTMLElement>('.page-face--back')
+    if (front) front.style.backgroundImage = `url(${spreads[index].right})`
+    if (back) back.style.backgroundImage = `url(${spreads[index + 1].left})`
+
+    gsap.set(leaf, {
+      rotationY: 0,
+      autoAlpha: 1,
+      transformOrigin: 'left center',
+    })
+    gsap.to(leaf, {
+      rotationY: -180,
+      duration: 0.95,
+      ease: 'power2.inOut',
+      onComplete: () => {
+        setIndex((i) => i + 1)
+        gsap.set(leaf, { rotationY: 0, autoAlpha: 0 })
+        setBusy(false)
+      },
+    })
+  }, [active, busy, index, last, spreads])
+
+  const turnBack = useCallback(() => {
+    if (!active || busy || index <= 0) return
+    const leaf = leafRef.current
+    if (!leaf) return
+    setBusy(true)
+
+    const front = leaf.querySelector<HTMLElement>('.page-face--front')
+    const back = leaf.querySelector<HTMLElement>('.page-face--back')
+    if (front) front.style.backgroundImage = `url(${spreads[index - 1].right})`
+    if (back) back.style.backgroundImage = `url(${spreads[index].left})`
+
+    gsap.set(leaf, {
+      rotationY: -180,
+      autoAlpha: 1,
+      transformOrigin: 'left center',
+    })
+    gsap.to(leaf, {
+      rotationY: 0,
+      duration: 0.95,
+      ease: 'power2.inOut',
+      onComplete: () => {
+        setIndex((i) => i - 1)
+        gsap.set(leaf, { rotationY: 0, autoAlpha: 0 })
+        setBusy(false)
+      },
+    })
+  }, [active, busy, index, spreads])
+
+  useLayoutEffect(() => {
+    if (!active) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault()
+        turnForward()
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        turnBack()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [active, turnForward, turnBack])
 
   return (
     <div className={`sketchbook-pages ${active ? 'is-active' : ''}`}>
-      <img
-        className="page-mask page-mask--left"
-        src={`${leftMask}?v=2`}
-        alt=""
-        draggable={false}
+      {/* Static plates under the flipping leaf */}
+      <div
+        className="page-plate page-plate--left"
+        style={{
+          ...rectStyle(leftPage),
+          backgroundImage: `url(${current.left})`,
+        }}
         aria-hidden
       />
-      <img
-        className="page-mask page-mask--right"
-        src={`${rightMask}?v=2`}
-        alt=""
-        draggable={false}
+      <div
+        className="page-plate page-plate--right page-plate--under"
+        style={{
+          ...rectStyle(rightPage),
+          backgroundImage: `url(${index < last ? next.right : current.right})`,
+        }}
         aria-hidden
+      />
+      <button
+        type="button"
+        className="page-plate page-plate--right page-plate--hit"
+        style={{
+          ...rectStyle(rightPage),
+          backgroundImage: `url(${current.right})`,
+        }}
+        aria-label="Turn to next page"
+        disabled={!active || busy || index >= last}
+        onClick={turnForward}
+      />
+      <button
+        type="button"
+        className="page-plate page-plate--left page-plate--hit-prev"
+        style={rectStyle(leftPage)}
+        aria-label="Turn to previous page"
+        disabled={!active || busy || index <= 0}
+        onClick={turnBack}
       />
 
-      <button
-        type="button"
-        className="page-hit page-hit--left"
-        style={rectStyle(leftPage)}
-        aria-label="Previous page"
-        disabled
-      />
-      <button
-        type="button"
-        className="page-hit page-hit--right"
-        style={rectStyle(rightPage)}
-        aria-label="Next page"
-        disabled
-      />
+      <div className="page-leaf-stage" style={rectStyle(rightPage)}>
+        <div ref={leafRef} className="page-leaf" aria-hidden>
+          <div className="page-face page-face--front" />
+          <div className="page-face page-face--back" />
+          <div className="page-leaf__shade" />
+        </div>
+      </div>
 
       <div
         className="sketchbook-pages__nav"
@@ -60,7 +165,27 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
           top: `${(pageRect.top + pageRect.height) * 100}%`,
         }}
       >
-        <span className="sketchbook-pages__count">Both page masks loaded</span>
+        <button
+          type="button"
+          className="sketchbook-nav-btn"
+          onClick={turnBack}
+          disabled={!active || busy || index <= 0}
+          aria-label="Previous page"
+        >
+          ‹
+        </button>
+        <span className="sketchbook-pages__count">
+          {index + 1} / {spreads.length}
+        </span>
+        <button
+          type="button"
+          className="sketchbook-nav-btn"
+          onClick={turnForward}
+          disabled={!active || busy || index >= last}
+          aria-label="Next page"
+        >
+          ›
+        </button>
       </div>
     </div>
   )

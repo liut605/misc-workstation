@@ -78,6 +78,34 @@ export const SKETCHBOOK = {
     width: 0.29505813953488375,
     height: 0.7760416666666666,
   },
+  /** Placeholder spreads cut to the manual page silhouettes. */
+  spreads: [
+    {
+      id: 'blank',
+      left: '/sketchbook-spread-0-left.png',
+      right: '/sketchbook-spread-0-right.png',
+    },
+    {
+      id: 'lines',
+      left: '/sketchbook-spread-1-left.png',
+      right: '/sketchbook-spread-1-right.png',
+    },
+    {
+      id: 'circles',
+      left: '/sketchbook-spread-2-left.png',
+      right: '/sketchbook-spread-2-right.png',
+    },
+    {
+      id: 'plant',
+      left: '/sketchbook-spread-3-left.png',
+      right: '/sketchbook-spread-3-right.png',
+    },
+    {
+      id: 'portrait',
+      left: '/sketchbook-spread-4-left.png',
+      right: '/sketchbook-spread-4-right.png',
+    },
+  ],
 } as const
 
 export type AppTab = {
