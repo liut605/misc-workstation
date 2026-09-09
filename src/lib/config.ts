@@ -11,6 +11,9 @@ export const SCREEN_PIXELS = { width: 772, height: 435 } as const
 /** Native desk photo size */
 export const DESK_IMAGE = { width: 2752, height: 1536 } as const
 
+/** Native sketchbook overhead / mask size */
+export const OVERHEAD_IMAGE = { width: 1376, height: 768 } as const
+
 /**
  * Open sketchbook on the left of the desk (image-normalized 0–1).
  *
@@ -64,7 +67,11 @@ export const SKETCHBOOK = {
     width: 0.5872093023255813,
     height: 0.7799479166666666,
   },
-  /** From manual left-page mask alpha bbox. */
+  /**
+   * Page plates: cropped from the full-frame masks using each mask’s alpha bbox,
+   * then placed with image-normalized % inside the overhead cover-fit stage
+   * (same coordinate space as sketchbook-overhead.jpg pixels).
+   */
   leftPage: {
     left: 0.20784883720930233,
     top: 0.109375,

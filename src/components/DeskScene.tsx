@@ -1,12 +1,13 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
-import { DESK_IMAGE, NOTEBOOK, SCREEN_RECT } from '../lib/config'
+import { DESK_IMAGE, NOTEBOOK, OVERHEAD_IMAGE, SCREEN_RECT } from '../lib/config'
 import { SketchbookPages } from './SketchbookPages'
 import './DeskScene.css'
 
 const IMG_W = DESK_IMAGE.width
 const IMG_H = DESK_IMAGE.height
 const IMG_ASPECT = IMG_W / IMG_H
+const OVERHEAD_ASPECT = OVERHEAD_IMAGE.width / OVERHEAD_IMAGE.height
 
 type ScreenRect = { top: number; left: number; width: number; height: number }
 
@@ -22,18 +23,18 @@ type DeskSceneProps = {
 }
 
 /**
- * Full-bleed desk: prefer filling height and cropping left/right, centered.
- * If the frame is still short on width, fill width and center vertically.
+ * Cover-fit a photo into the viewport while preserving aspect.
+ * Children using image-normalized % must live inside this box.
  */
-function coverLayout(vw: number, vh: number) {
+function coverLayoutFor(aspect: number, vw: number, vh: number) {
   let height = vh
-  let width = height * IMG_ASPECT
+  let width = height * aspect
   let top = 0
   let left = (vw - width) / 2
 
   if (width + 0.5 < vw) {
     width = vw
-    height = width / IMG_ASPECT
+    height = width / aspect
     left = 0
     top = (vh - height) / 2
   }
@@ -47,6 +48,10 @@ function coverLayout(vw: number, vh: number) {
   top = cy - height / 2
 
   return { width, height, top, left }
+}
+
+function coverLayout(vw: number, vh: number) {
+  return coverLayoutFor(IMG_ASPECT, vw, vh)
 }
 
 function playVideoReverse(
@@ -98,6 +103,7 @@ export function DeskScene({
   const notebookHotspotRef = useRef<HTMLButtonElement>(null)
   const notebookFocusRef = useRef<HTMLSpanElement>(null)
   const overheadRef = useRef<HTMLDivElement>(null)
+  const overheadStageRef = useRef<HTMLDivElement>(null)
   const zoomVideoRef = useRef<HTMLVideoElement>(null)
   const prevModeRef = useRef<DeskMode>(mode)
   const reverseCancelRef = useRef<(() => void) | null>(null)
@@ -131,6 +137,32 @@ export function DeskScene({
       window.visualViewport?.removeEventListener('resize', apply)
     }
   }, [sceneRef])
+
+  // Keep overhead photo + page plates in one cover-fit stage so image-% coords match pixels.
+  useLayoutEffect(() => {
+    const stage = overheadStageRef.current
+    if (!stage) return
+
+    const apply = () => {
+      const { width, height, top, left } = coverLayoutFor(
+        OVERHEAD_ASPECT,
+        window.innerWidth,
+        window.innerHeight,
+      )
+      stage.style.width = `${width}px`
+      stage.style.height = `${height}px`
+      stage.style.top = `${top}px`
+      stage.style.left = `${left}px`
+    }
+
+    apply()
+    window.addEventListener('resize', apply)
+    window.visualViewport?.addEventListener('resize', apply)
+    return () => {
+      window.removeEventListener('resize', apply)
+      window.visualViewport?.removeEventListener('resize', apply)
+    }
+  }, [])
 
   // Sketchbook: Flow zoom video → overhead handoff (fallback: 2D dolly).
   useLayoutEffect(() => {
@@ -499,12 +531,14 @@ export function DeskScene({
         className="sketchbook-overhead"
         aria-hidden={!pagesActive}
       >
-        <img
-          src="/sketchbook-overhead.jpg"
-          alt=""
-          draggable={false}
-        />
-        <SketchbookPages active={pagesActive} />
+        <div ref={overheadStageRef} className="sketchbook-overhead__stage">
+          <img
+            src="/sketchbook-overhead.jpg"
+            alt=""
+            draggable={false}
+          />
+          <SketchbookPages active={pagesActive} />
+        </div>
       </div>
 
       {showChrome && hintVisible && (
