@@ -17,11 +17,9 @@
   margin: 0;
   padding: 0;
   border: 0;
-  background-color: transparent;
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  background-position: center;
-  overflow: visible;
+  background: transparent;
+  overflow: hidden;
+  isolation: isolate;
 }
 
 .page-plate--under {
@@ -39,13 +37,42 @@
 
 .page-plate--hit-prev {
   z-index: 3;
-  background-color: transparent;
-  background-image: none !important;
+  background: transparent;
   cursor: pointer;
 }
 
 .page-plate--hit-prev:disabled {
   cursor: default;
+}
+
+.page-paper {
+  position: absolute;
+  inset: 0;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none;
+}
+
+.page-drawing-slot {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.page-drawing {
+  display: block;
+  max-width: 85%;
+  max-height: 85%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .page-leaf-stage {
@@ -70,12 +97,9 @@
   inset: 0;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  background-color: transparent;
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  background-position: center;
-  border-radius: 0;
-  overflow: visible;
+  overflow: hidden;
+  background: transparent;
+  isolation: isolate;
 }
 
 .page-face--back {
@@ -87,7 +111,6 @@
   inset: 0;
   z-index: 2;
   pointer-events: none;
-  border-radius: 0;
   background: linear-gradient(
     90deg,
     rgba(40, 28, 18, 0.18) 0%,

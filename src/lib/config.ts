@@ -87,32 +87,28 @@ export const SKETCHBOOK = {
     width: 0.29505813953488375,
     height: 0.7760416666666666,
   },
-  /** Placeholder spreads cut to the manual page silhouettes. */
+  /** Blank cream plates (manual mask crops) under multiply drawings. */
+  blankLeft: '/sketchbook-page-blank-left.png',
+  blankRight: '/sketchbook-page-blank-right.png',
+  /**
+   * Drawing spreads — shown side-by-side (left | right).
+   * Order: 5|6, then 1|2, then 3|4.
+   */
   spreads: [
     {
-      id: 'blank',
-      left: '/sketchbook-spread-0-left.png',
-      right: '/sketchbook-spread-0-right.png',
+      id: '5-6',
+      left: '/drawings/drawing-5.jpg',
+      right: '/drawings/drawing-6.jpg',
     },
     {
-      id: 'lines',
-      left: '/sketchbook-spread-1-left.png',
-      right: '/sketchbook-spread-1-right.png',
+      id: '1-2',
+      left: '/drawings/drawing-1.jpg',
+      right: '/drawings/drawing-2.jpg',
     },
     {
-      id: 'circles',
-      left: '/sketchbook-spread-2-left.png',
-      right: '/sketchbook-spread-2-right.png',
-    },
-    {
-      id: 'plant',
-      left: '/sketchbook-spread-3-left.png',
-      right: '/sketchbook-spread-3-right.png',
-    },
-    {
-      id: 'portrait',
-      left: '/sketchbook-spread-4-left.png',
-      right: '/sketchbook-spread-4-right.png',
+      id: '3-4',
+      left: '/drawings/drawing-3.jpg',
+      right: '/drawings/drawing-4.jpg',
     },
   ],
 } as const
