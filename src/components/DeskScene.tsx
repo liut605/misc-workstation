@@ -144,15 +144,20 @@ export function DeskScene({
     if (!stage) return
 
     const apply = () => {
-      const { width, height, top, left } = coverLayoutFor(
+      const { width, height } = coverLayoutFor(
         OVERHEAD_ASPECT,
         window.innerWidth,
         window.innerHeight,
       )
+      // Center with translate so we never fight a leftover margin-left.
       stage.style.width = `${width}px`
       stage.style.height = `${height}px`
-      stage.style.top = `${top}px`
-      stage.style.left = `${left}px`
+      stage.style.top = '50%'
+      stage.style.left = '50%'
+      stage.style.right = 'auto'
+      stage.style.bottom = 'auto'
+      stage.style.margin = '0'
+      stage.style.transform = 'translate(-50%, -50%)'
     }
 
     apply()
