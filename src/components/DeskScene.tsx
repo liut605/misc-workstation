@@ -177,6 +177,13 @@ export function DeskScene({
     })
   }, [])
 
+  // Decode overhead still early so the video→prototype cut never waits on image paint.
+  useEffect(() => {
+    const img = new Image()
+    img.src = '/sketchbook-overhead.jpg'
+    void img.decode?.().catch(() => {})
+  }, [])
+
   useLayoutEffect(() => {
     const scene = sceneRef.current
     if (!scene) return
@@ -253,37 +260,15 @@ export function DeskScene({
     gsap.set(scene, { transformOrigin: origin, force3D: true })
 
     const handoffToOverhead = () => {
-      const tl = gsap.timeline({
-        onComplete: () => {
-          setPagesActive(true)
-          setVideoPlaying(false)
-          if (video) {
-            video.pause()
-          }
-        },
-      })
-      sketchTlRef.current = tl
-      tl.to(
-        overhead,
-        {
-          autoAlpha: 1,
-          scale: 1,
-          duration: 0.45,
-          ease: 'power2.out',
-        },
-        0,
-      )
+      // Instant cut on the book frame. A crossfade leaves both layers
+      // semi-transparent and the desk/monitor flashes through underneath.
+      gsap.set(overhead, { autoAlpha: 1, scale: 1 })
+      setPagesActive(true)
       if (video) {
-        tl.to(
-          video,
-          {
-            autoAlpha: 0,
-            duration: 0.4,
-            ease: 'power2.inOut',
-          },
-          0.05,
-        )
+        video.pause()
+        gsap.set(video, { autoAlpha: 0 })
       }
+      setVideoPlaying(false)
     }
 
     if (mode === 'sketchbook' && prev !== 'sketchbook') {
@@ -482,7 +467,7 @@ export function DeskScene({
           Number(gsap.getProperty(overhead, 'autoAlpha')) > 0.01
 
         if (overheadVisible) {
-          // Align video to the book end of the clip before revealing it.
+          // Align video to the book frame, then hard-cut (no crossfade through desk).
           const bookTime = zoomOut
             ? 0
             : Number.isFinite(video.duration) && video.duration > 0
@@ -490,22 +475,9 @@ export function DeskScene({
               : 0
           void seekVideoTo(video, bookTime).then(() => {
             if (cancelled) return
-            const tl = gsap.timeline({
-              onComplete: startExitPlayback,
-            })
-            sketchTlRef.current = tl
-            tl.to(overhead, {
-              autoAlpha: 0,
-              scale: 1.02,
-              duration: 0.28,
-              ease: 'power2.in',
-            })
-            tl.fromTo(
-              video,
-              { autoAlpha: 0 },
-              { autoAlpha: 1, duration: 0.2, ease: 'power1.out' },
-              0,
-            )
+            gsap.set(video, { autoAlpha: 1 })
+            gsap.set(overhead, { autoAlpha: 0, scale: 1.02 })
+            startExitPlayback()
           })
         } else {
           startExitPlayback()

@@ -59,8 +59,8 @@ export const NOTEBOOK = {
   zoomVideoIsZoomOut: true,
   /** Playback rate for zoom in/out clip (2 = twice real-time). */
   zoomPlaybackRate: 2,
-  /** Crossfade to overhead this many seconds from the book end of the clip (media time). */
-  zoomHandoffLead: 0.35,
+  /** Instant cut to overhead this many seconds before the book end of the clip (media time). Keep tiny — only enough to avoid decoder edge glitches. */
+  zoomHandoffLead: 0.02,
   zoom: {
     scale: 4.0,
     rotateZ: 4,
