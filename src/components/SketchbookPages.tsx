@@ -69,8 +69,9 @@ function preloadUrls(urls: string[]) {
  * Layer rules during a turn (so both destination drawings are visible immediately):
  * - Forward: hide the right hit plate so the under-right (next.right) shows through;
  *   leaf back carries next.left onto the left page. Commit index before hiding the leaf.
- * - Back: swap the left base to prev.left under the leaf at -180; leaf front carries
- *   prev.right onto the right page. Commit index before hiding the leaf.
+ * - Back: keep the right hit plate (current.right) visible; swap the left base to
+ *   prev.left under the leaf at -180; leaf front carries prev.right onto the right.
+ *   Never hide the right hit on back — that would flash next.right from the under layer.
  */
 export function SketchbookPages({ active }: SketchbookPagesProps) {
   const [index, setIndex] = useState(0)
@@ -113,8 +114,11 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
 
   // Left base: during a back-flip, show the destination left under the leaf.
   const leftDrawing = flip === 'back' && index > 0 ? prevSpread.left : current.left
-  // Right under: always the page revealed by a forward flip (or current on the last spread).
-  const rightUnderDrawing = index < last ? nextSpread.right : current.right
+  // Right under is only revealed during a forward flip (hit plate is hidden then).
+  // During a back flip / idle, keep current.right here so hiding the hit plate
+  // can never flash the *next* spread's right by mistake.
+  const rightUnderDrawing =
+    flip === 'forward' && index < last ? nextSpread.right : current.right
   // Visible right content when idle / after commit.
   const rightDrawing = current.right
 
@@ -126,7 +130,6 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
     const from = spreads[index]
     const dest = spreads[index + 1]
     setBusy(true)
-    setFlip('forward')
 
     // Both destination drawings must be decoded before the leaf moves.
     await preloadUrls([dest.left, dest.right, from.right])
@@ -135,6 +138,11 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
     const back = leaf.querySelector<HTMLImageElement>('.page-face--back .page-drawing')
     if (front) front.src = from.right
     if (back) back.src = dest.left
+
+    // Commit forward under-right (dest.right) before hiding the hit plate.
+    flushSync(() => {
+      setFlip('forward')
+    })
 
     // Hide the old right hit plate so under-right (dest.right) is what shows through.
     if (hitRightRef.current) {
@@ -183,6 +191,8 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
     if (back) back.src = from.left
 
     // Cover the left with the leaf first, then swap the base to dest.left underneath.
+    // Keep the right hit plate visible (current.right) until the leaf lands with
+    // dest.right — hiding it would flash the forward under-layer (next.right).
     gsap.set(leaf, {
       rotationY: -180,
       autoAlpha: 1,
@@ -191,11 +201,6 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
     flushSync(() => {
       setFlip('back')
     })
-
-    // Hide old right while the leaf carries dest.right onto the right plate.
-    if (hitRightRef.current) {
-      gsap.set(hitRightRef.current, { autoAlpha: 0 })
-    }
 
     gsap.to(leaf, {
       rotationY: 0,
@@ -207,9 +212,6 @@ export function SketchbookPages({ active }: SketchbookPagesProps) {
           setFlip(null)
         })
         gsap.set(leaf, { rotationY: 0, autoAlpha: 0 })
-        if (hitRightRef.current) {
-          gsap.set(hitRightRef.current, { autoAlpha: 1 })
-        }
         setBusy(false)
       },
     })
