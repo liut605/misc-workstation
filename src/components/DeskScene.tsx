@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
-import { DESK_IMAGE, NOTEBOOK, OVERHEAD_IMAGE, SCREEN_RECT } from '../lib/config'
+import { DESK_IMAGE, NOTEBOOK, OVERHEAD_IMAGE, SCREEN_RECT, WALL } from '../lib/config'
 import { SketchbookPages } from './SketchbookPages'
 import './DeskScene.css'
 
@@ -114,6 +114,7 @@ export function DeskScene({
   const sketchTlRef = useRef<gsap.core.Timeline | null>(null)
   const [hintVisible, setHintVisible] = useState(false)
   const [notebookHint, setNotebookHint] = useState(false)
+  const [wallHint, setWallHint] = useState(false)
   const [pagesActive, setPagesActive] = useState(false)
   const [videoPlaying, setVideoPlaying] = useState(false)
 
@@ -538,14 +539,40 @@ export function DeskScene({
           />
 
           <button
+            type="button"
+            className="wall-hotspot"
+            aria-label="Wall frames coming soon"
+            disabled={!interactive}
+            tabIndex={interactive ? 0 : -1}
+            onMouseEnter={() => interactive && setWallHint(true)}
+            onMouseLeave={() => setWallHint(false)}
+            onFocus={() => interactive && setWallHint(true)}
+            onBlur={() => setWallHint(false)}
+            style={{
+              left: `${WALL.left * 100}%`,
+              top: `${WALL.top * 100}%`,
+              width: `${WALL.width * 100}%`,
+              height: `${WALL.height * 100}%`,
+            }}
+          />
+
+          <button
             ref={hotspotRef}
             type="button"
             className="screen-hotspot"
             aria-label="Click the screen to enter projects"
             disabled={!interactive}
-            onMouseEnter={() => interactive && setHintVisible(true)}
+            onMouseEnter={() => {
+              if (!interactive) return
+              setWallHint(false)
+              setHintVisible(true)
+            }}
             onMouseLeave={() => setHintVisible(false)}
-            onFocus={() => interactive && setHintVisible(true)}
+            onFocus={() => {
+              if (!interactive) return
+              setWallHint(false)
+              setHintVisible(true)
+            }}
             onBlur={() => setHintVisible(false)}
             onClick={() => {
               const el = hotspotRef.current
@@ -572,9 +599,17 @@ export function DeskScene({
             className="notebook-hotspot"
             aria-label="Open sketchbook"
             disabled={!interactive}
-            onMouseEnter={() => interactive && setNotebookHint(true)}
+            onMouseEnter={() => {
+              if (!interactive) return
+              setWallHint(false)
+              setNotebookHint(true)
+            }}
             onMouseLeave={() => setNotebookHint(false)}
-            onFocus={() => interactive && setNotebookHint(true)}
+            onFocus={() => {
+              if (!interactive) return
+              setWallHint(false)
+              setNotebookHint(true)
+            }}
             onBlur={() => setNotebookHint(false)}
             onClick={onOpenSketchbook}
             style={{
@@ -617,6 +652,9 @@ export function DeskScene({
       )}
       {showChrome && notebookHint && !hintVisible && (
         <p className="desk-hint is-visible">Click the sketchbook to look closer</p>
+      )}
+      {showChrome && wallHint && !hintVisible && !notebookHint && (
+        <p className="desk-hint is-visible">Coming soon</p>
       )}
     </div>
   )

@@ -8,6 +8,17 @@ export const SCREEN_RECT = {
 
 export const SCREEN_PIXELS = { width: 772, height: 435 } as const
 
+/**
+ * Gallery wall hover region (image-normalized). Screen + notebook hotspots
+ * sit above this so they keep their own hints / clicks.
+ */
+export const WALL = {
+  left: 0,
+  top: 0,
+  width: 1,
+  height: 0.68,
+} as const
+
 /** Native desk photo size */
 export const DESK_IMAGE = { width: 2752, height: 1536 } as const
 

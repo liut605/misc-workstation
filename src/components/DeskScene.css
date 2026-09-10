@@ -49,6 +49,7 @@
 
 .screen-hotspot {
   position: absolute;
+  z-index: 3;
   border: 0;
   padding: 0;
   background: transparent;
@@ -66,8 +67,25 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
+.wall-hotspot {
+  position: absolute;
+  z-index: 1;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: default;
+  border-radius: 0;
+  outline: none;
+}
+
+.wall-hotspot:disabled {
+  cursor: default;
+  pointer-events: none;
+}
+
 .notebook-hotspot {
   position: absolute;
+  z-index: 3;
   border: 0;
   padding: 0;
   background: transparent;
