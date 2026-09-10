@@ -64,7 +64,7 @@ export const NOTEBOOK = {
    * already show a perspective change on the first painted frame
    * (desk click / exit click feel instant instead of lingering on a near-still).
    */
-  zoomEdgeSkip: 0.1,
+  zoomEdgeSkip: 0.2,
   /** Instant cut to overhead this many seconds before the book end of the clip (media time). Keep tiny — only enough to avoid decoder edge glitches. */
   zoomHandoffLead: 0.02,
   zoom: {

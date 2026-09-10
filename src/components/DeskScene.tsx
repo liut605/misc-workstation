@@ -606,19 +606,6 @@ export function DeskScene({
             alt="Workstation desk with blank frames, monitor, sketchbook, and camera"
             draggable={false}
           />
-          <img
-            className="screen-idle"
-            src="/browser-idle-screenshot.jpg"
-            alt=""
-            aria-hidden="true"
-            style={{
-              left: `${SCREEN_RECT.left * 100}%`,
-              top: `${SCREEN_RECT.top * 100}%`,
-              width: `${SCREEN_RECT.width * 100}%`,
-              height: `${SCREEN_RECT.height * 100}%`,
-              opacity: mode === 'room' && !videoPlaying ? 1 : 0,
-            }}
-          />
 
           <span
             ref={notebookFocusRef}
