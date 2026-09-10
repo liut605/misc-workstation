@@ -3,6 +3,7 @@ import gsap from 'gsap'
 import { DeskScene, type DeskMode } from './components/DeskScene'
 import { DesktopBrowser } from './components/DesktopBrowser'
 import { HomeView } from './components/HomeView'
+import { SCREEN_RECT } from './lib/config'
 import './App.css'
 
 type Mode = 'home' | 'desk' | 'desktop'
@@ -121,6 +122,15 @@ export default function App() {
     }
   }, [deskMode, mode, fromRect])
 
+  // Crop the baked-in monitor region out of desk-final.jpg so the morph
+  // matches the room photo (no separate screen-idle screenshot).
+  const morphCropStyle = {
+    ['--screen-l' as string]: String(SCREEN_RECT.left),
+    ['--screen-t' as string]: String(SCREEN_RECT.top),
+    ['--screen-w' as string]: String(SCREEN_RECT.width),
+    ['--screen-h' as string]: String(SCREEN_RECT.height),
+  }
+
   return (
     <div className="app-shell">
       {mode === 'home' && <HomeView onEnterMisc={enterDesk} />}
@@ -136,9 +146,9 @@ export default function App() {
         />
       )}
 
-      <div ref={morphRef} className="screen-morph" aria-hidden>
+      <div ref={morphRef} className="screen-morph" style={morphCropStyle} aria-hidden>
         <img
-          src="/browser-idle-screenshot.jpg"
+          src="/desk-final.jpg"
           alt=""
           className="screen-morph__img"
         />
