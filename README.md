@@ -25,10 +25,9 @@ Dev server: [http://127.0.0.1:43123](http://127.0.0.1:43123)
 
 ## Key files
 
-- `public/desk-final.jpg` — room still
+- `public/desk-final.jpg` — room still (monitor content baked in)
 - `public/sketchbook-zoom.mp4` — Flow zoom-out (book → desk); enter plays reverse
 - `public/sketchbook-overhead.jpg` — top-down still for page turns
-- `public/browser-idle-screenshot.jpg` — distant monitor content
 - `src/lib/config.ts` — screen/notebook hotspot rects, zoom video path, tab URLs
 - `src/components/DeskScene.tsx` — room + monitor morph + sketchbook video zoom
 - `src/components/SketchbookPages.tsx` — spine-hinged page turns
