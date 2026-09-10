@@ -145,8 +145,7 @@ export const BROWSER_TABS: AppTab[] = [
   {
     id: 'string-of-pearls',
     label: 'String of Pearls',
-    url: null,
-    placeholder: 'Link coming once the prototype is ready.',
+    url: 'https://string-of-pearls.tsingliu.info/',
   },
   {
     id: 'placeholder-a',
