@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { DESK_IMAGE, NOTEBOOK, OVERHEAD_IMAGE, SCREEN_RECT, WALL } from '../lib/config'
 import { SketchbookPages } from './SketchbookPages'
