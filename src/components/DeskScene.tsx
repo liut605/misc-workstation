@@ -282,9 +282,11 @@ export function DeskScene({
     const origin = `${NOTEBOOK.centerX * 100}% ${NOTEBOOK.centerY * 100}%`
     gsap.set(scene, { transformOrigin: origin, force3D: true })
 
+    const fadeDur = NOTEBOOK.zoomHandoffFade
+
     const handoffToOverhead = () => {
-      // Fade the interactive overhead in on top of the paused last video frame.
-      // Keep the video fully opaque underneath so the desk never shows through.
+      // Fade interactive overhead in over the paused last video frame.
+      // Keep video opaque underneath so the desk never shows through.
       if (video) video.pause()
       setPagesActive(true)
       gsap.set(overhead, { scale: 1, autoAlpha: 0 })
@@ -297,7 +299,48 @@ export function DeskScene({
       sketchTlRef.current = tl
       tl.to(overhead, {
         autoAlpha: 1,
-        duration: NOTEBOOK.zoomHandoffFade,
+        duration: fadeDur,
+        ease: 'power2.inOut',
+      })
+    }
+
+    /** Fade video in over the desk still, then run `onShown`. */
+    const revealVideoOverDesk = (
+      el: HTMLVideoElement,
+      onShown: () => void,
+      isCancelled: () => boolean,
+    ) => {
+      gsap.set(el, { autoAlpha: 0 })
+      const tl = gsap.timeline({
+        onComplete: () => {
+          if (isCancelled()) return
+          onShown()
+        },
+      })
+      sketchTlRef.current = tl
+      tl.to(el, {
+        autoAlpha: 1,
+        duration: fadeDur,
+        ease: 'power2.inOut',
+      })
+    }
+
+    /** Fade video out over the desk still, then run cleanup. */
+    const concealVideoOverDesk = (
+      el: HTMLVideoElement,
+      onHidden: () => void,
+      isCancelled: () => boolean,
+    ) => {
+      const tl = gsap.timeline({
+        onComplete: () => {
+          if (isCancelled()) return
+          onHidden()
+        },
+      })
+      sketchTlRef.current = tl
+      tl.to(el, {
+        autoAlpha: 0,
+        duration: fadeDur,
         ease: 'power2.inOut',
       })
     }
@@ -316,6 +359,7 @@ export function DeskScene({
         const zoomOut = NOTEBOOK.zoomVideoIsZoomOut
         let cancelled = false
         let disposeMeta: (() => void) | null = null
+        const isCancelled = () => cancelled
 
         if (zoomOut) {
           // Clip is book → desk. Enter = reverse from trimmed desk → trimmed book.
@@ -323,12 +367,17 @@ export function DeskScene({
             const { desk, bookStop } = zoomPlayWindow(video.duration)
             void seekVideoTo(video, desk).then(() => {
               if (cancelled) return
-              gsap.set(video, { autoAlpha: 1 })
-              reverseCancelRef.current = playVideoReverse(
+              revealVideoOverDesk(
                 video,
-                handoffToOverhead,
-                rate,
-                bookStop,
+                () => {
+                  reverseCancelRef.current = playVideoReverse(
+                    video,
+                    handoffToOverhead,
+                    rate,
+                    bookStop,
+                  )
+                },
+                isCancelled,
               )
             })
           })
@@ -363,16 +412,21 @@ export function DeskScene({
             void seekVideoTo(video, book).then(() => {
               if (cancelled) return
               video.playbackRate = rate
-              gsap.set(video, { autoAlpha: 1 })
-              video.addEventListener('timeupdate', onTime)
-              video.addEventListener('ended', onEnded)
-              void video.play().catch(() => {
-                if (cancelled) return
-                handedOff = true
-                video.removeEventListener('timeupdate', onTime)
-                video.removeEventListener('ended', onEnded)
-                handoffToOverhead()
-              })
+              revealVideoOverDesk(
+                video,
+                () => {
+                  video.addEventListener('timeupdate', onTime)
+                  video.addEventListener('ended', onEnded)
+                  void video.play().catch(() => {
+                    if (cancelled) return
+                    handedOff = true
+                    video.removeEventListener('timeupdate', onTime)
+                    video.removeEventListener('ended', onEnded)
+                    handoffToOverhead()
+                  })
+                },
+                isCancelled,
+              )
             })
           })
 
@@ -430,16 +484,13 @@ export function DeskScene({
         dur * NOTEBOOK.zoom.overheadFadeAt,
       )
     } else if (mode === 'room' && prev === 'sketchbook') {
-      setPagesActive(false)
-
       if (hasVideo && video) {
-        const finishExit = () => {
-          setVideoPlaying(false)
-          gsap.set(video, { autoAlpha: 0 })
-          gsap.set(overhead, { autoAlpha: 0, scale: 1.02 })
-          gsap.set(scene, { x: 0, y: 0, scale: 1, rotation: 0 })
+        const zoomOut = NOTEBOOK.zoomVideoIsZoomOut
+        const rate = NOTEBOOK.zoomPlaybackRate
+        let cancelled = false
+
+        const parkVideoAfterExit = () => {
           video.pause()
-          // Park on the trimmed desk frame so the next enter doesn't flash frame 0.
           if (
             NOTEBOOK.zoomVideoIsZoomOut &&
             Number.isFinite(video.duration) &&
@@ -455,43 +506,57 @@ export function DeskScene({
           }
         }
 
-        const zoomOut = NOTEBOOK.zoomVideoIsZoomOut
-        const rate = NOTEBOOK.zoomPlaybackRate
-        let cancelled = false
+        const finishExit = () => {
+          // Crossfade video → desk, then clear sketchbook layers.
+          concealVideoOverDesk(
+            video,
+            () => {
+              setPagesActive(false)
+              setVideoPlaying(false)
+              gsap.set(video, { autoAlpha: 0 })
+              gsap.set(overhead, { autoAlpha: 0, scale: 1.02 })
+              gsap.set(scene, { x: 0, y: 0, scale: 1, rotation: 0 })
+              parkVideoAfterExit()
+            },
+            () => cancelled,
+          )
+        }
 
         const startExitPlayback = () => {
           if (cancelled) return
           setVideoPlaying(true)
+          setPagesActive(false)
           if (zoomOut) {
             // Clip is book → desk. Exit = play forward across the trimmed window.
             const { book, desk } = zoomPlayWindow(video.duration)
-            void seekVideoTo(video, book).then(() => {
-              if (cancelled) return
-              video.playbackRate = rate
-              gsap.set(video, { autoAlpha: 1 })
-              let finished = false
-              const finish = () => {
-                if (finished) return
-                finished = true
-                video.pause()
-                video.removeEventListener('timeupdate', onTime)
-                video.removeEventListener('ended', onEnded)
-                finishExit()
-              }
-              const onTime = () => {
-                if (video.currentTime >= desk - 0.001) finish()
-              }
-              const onEnded = () => finish()
-              video.addEventListener('timeupdate', onTime)
-              video.addEventListener('ended', onEnded)
-              void video.play().catch(() => finish())
-              reverseCancelRef.current = () => {
-                finished = true
-                video.removeEventListener('timeupdate', onTime)
-                video.removeEventListener('ended', onEnded)
-                video.pause()
-              }
-            })
+            video.playbackRate = rate
+            // Already seeked + revealed under overhead; ensure time & opacity.
+            if (Math.abs(video.currentTime - book) > 0.08) {
+              video.currentTime = book
+            }
+            gsap.set(video, { autoAlpha: 1 })
+            let finished = false
+            const finish = () => {
+              if (finished) return
+              finished = true
+              video.pause()
+              video.removeEventListener('timeupdate', onTime)
+              video.removeEventListener('ended', onEnded)
+              finishExit()
+            }
+            const onTime = () => {
+              if (video.currentTime >= desk - 0.001) finish()
+            }
+            const onEnded = () => finish()
+            video.addEventListener('timeupdate', onTime)
+            video.addEventListener('ended', onEnded)
+            void video.play().catch(() => finish())
+            reverseCancelRef.current = () => {
+              finished = true
+              video.removeEventListener('timeupdate', onTime)
+              video.removeEventListener('ended', onEnded)
+              video.pause()
+            }
           } else {
             // Clip is desk → book. Exit = reverse across the trimmed window.
             const { bookStop, desk } = zoomPlayWindow(video.duration)
@@ -512,7 +577,7 @@ export function DeskScene({
           Number(gsap.getProperty(overhead, 'autoAlpha')) > 0.01
 
         if (overheadVisible) {
-          // Align video to the trimmed book frame, then hard-cut.
+          // Seek book frame under the overhead, then fade overhead out onto video.
           const win = zoomPlayWindow(
             Number.isFinite(video.duration) ? video.duration : 0,
           )
@@ -520,11 +585,31 @@ export function DeskScene({
           void seekVideoTo(video, bookTime).then(() => {
             if (cancelled) return
             gsap.set(video, { autoAlpha: 1 })
-            gsap.set(overhead, { autoAlpha: 0, scale: 1.02 })
-            startExitPlayback()
+            const tl = gsap.timeline({
+              onComplete: () => {
+                if (cancelled) return
+                startExitPlayback()
+              },
+            })
+            sketchTlRef.current = tl
+            tl.to(overhead, {
+              autoAlpha: 0,
+              scale: 1.02,
+              duration: fadeDur,
+              ease: 'power2.inOut',
+            })
           })
         } else {
-          startExitPlayback()
+          setPagesActive(false)
+          // No overhead — fade video in over desk, then play exit.
+          const win = zoomPlayWindow(
+            Number.isFinite(video.duration) ? video.duration : 0,
+          )
+          const startTime = zoomOut ? win.book : win.desk
+          void seekVideoTo(video, startTime).then(() => {
+            if (cancelled) return
+            revealVideoOverDesk(video, startExitPlayback, () => cancelled)
+          })
         }
 
         return () => {
@@ -533,6 +618,8 @@ export function DeskScene({
           reverseCancelRef.current?.()
         }
       }
+
+      setPagesActive(false)
 
       const overheadVisible =
         Number(gsap.getProperty(overhead, 'autoAlpha')) > 0.01
