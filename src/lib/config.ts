@@ -60,11 +60,14 @@ export const NOTEBOOK = {
   /** Playback rate for zoom in/out clip (2 = twice real-time). */
   zoomPlaybackRate: 2,
   /**
-   * Skip this much media time at each end of the clip so enter/exit
-   * already show a perspective change on the first painted frame
-   * (desk click / exit click feel instant instead of lingering on a near-still).
+   * Skip media time at the book end of the clip (end of zoom-in / start of zoom-out).
    */
-  zoomEdgeSkip: 0.2,
+  zoomEdgeSkipBook: 0.2,
+  /**
+   * Skip media time at the desk end of the clip (start of zoom-in / end of zoom-out).
+   * Kept shorter than the book skip so enter/exit don’t jump too far off the desk still.
+   */
+  zoomEdgeSkipDesk: 0.1,
   /** Instant cut to overhead this many seconds before the book end of the clip (media time). Keep tiny — only enough to avoid decoder edge glitches. */
   zoomHandoffLead: 0.02,
   zoom: {

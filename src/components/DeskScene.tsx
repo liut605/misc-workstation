@@ -94,19 +94,23 @@ function playVideoReverse(
 }
 
 /**
- * Usable media window after trimming ~zoomEdgeSkip from both ends.
+ * Usable media window after trimming book/desk edge skips.
  * For zoom-out clips: book ≈ low time, desk ≈ high time.
  */
 function zoomPlayWindow(duration: number) {
-  const skip = Math.max(0, NOTEBOOK.zoomEdgeSkip)
+  const skipBook = Math.max(0, NOTEBOOK.zoomEdgeSkipBook)
+  const skipDesk = Math.max(0, NOTEBOOK.zoomEdgeSkipDesk)
   const lead = Math.max(0, NOTEBOOK.zoomHandoffLead)
   if (!Number.isFinite(duration) || duration <= 0) {
-    return { book: skip, desk: skip + 0.1, bookStop: skip + lead }
+    return {
+      book: skipBook,
+      desk: skipBook + 0.1,
+      bookStop: skipBook + lead,
+    }
   }
   const maxSkip = Math.max(0, duration / 2 - 0.05)
-  const edge = Math.min(skip, maxSkip)
-  const book = edge
-  const desk = Math.max(book + 0.05, duration - edge)
+  const book = Math.min(skipBook, maxSkip)
+  const desk = Math.max(book + 0.05, duration - Math.min(skipDesk, maxSkip))
   const bookStop = Math.min(desk - 0.02, book + lead)
   return { book, desk, bookStop }
 }
