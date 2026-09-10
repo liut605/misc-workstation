@@ -3,7 +3,7 @@ import gsap from 'gsap'
 import { DeskScene, type DeskMode } from './components/DeskScene'
 import { DesktopBrowser } from './components/DesktopBrowser'
 import { HomeView } from './components/HomeView'
-import { SCREEN_RECT } from './lib/config'
+import { SCREEN_RECT, SCREEN_ZOOM } from './lib/config'
 import './App.css'
 
 type Mode = 'home' | 'desk' | 'desktop'
@@ -14,6 +14,8 @@ export default function App() {
   const [mode, setMode] = useState<Mode>('home')
   const [deskMode, setDeskMode] = useState<DeskMode>('room')
   const [fromRect, setFromRect] = useState<ScreenRect | null>(null)
+  /** Keeps the browser mounted through enter/exit morph crossfades. */
+  const [browserOpen, setBrowserOpen] = useState(false)
   const zoomDirection = useRef<'in' | 'out'>('in')
 
   const sceneRef = useRef<HTMLDivElement>(null)
@@ -25,6 +27,7 @@ export default function App() {
   }, [])
 
   const backHome = useCallback(() => {
+    setBrowserOpen(false)
     setMode('home')
     setDeskMode('room')
   }, [])
@@ -54,30 +57,34 @@ export default function App() {
     const morph = morphRef.current
     if (!morph) return
 
-    // Morph must end at the true fullscreen desktop shell (100vw × 100dvh).
-    // Letterboxing here caused a hard jump when DesktopBrowser mounted full-bleed.
     const vw = window.innerWidth
     const vh = window.innerHeight
+    const fade = SCREEN_ZOOM.crossfade
 
     if (zoomDirection.current === 'in') {
+      // Desk → morph (fade in) → expand → mount browser under morph → fade morph out.
+      // Stay on deskMode === 'zooming' until the whole sequence finishes so this
+      // effect's cleanup does not kill the timeline mid-crossfade.
       gsap.set(morph, {
         display: 'block',
         left: fromRect.left,
         top: fromRect.top,
         width: fromRect.width,
         height: fromRect.height,
-        opacity: 1,
+        opacity: 0,
         borderRadius: 2,
       })
       const tl = gsap.timeline({
         onComplete: () => {
+          gsap.set(morph, { display: 'none', opacity: 0 })
           setMode('desktop')
           setDeskMode('desktop')
-          // Keep morph up one frame so the browser can paint underneath, then hide.
-          requestAnimationFrame(() => {
-            gsap.set(morph, { display: 'none', opacity: 0 })
-          })
         },
+      })
+      tl.to(morph, {
+        opacity: 1,
+        duration: fade,
+        ease: 'power2.inOut',
       })
       tl.to(morph, {
         left: 0,
@@ -85,21 +92,31 @@ export default function App() {
         width: vw,
         height: vh,
         borderRadius: 0,
-        duration: 1.05,
+        duration: SCREEN_ZOOM.morphDurationIn,
         ease: 'power3.inOut',
+      })
+      tl.add(() => {
+        setBrowserOpen(true)
+      })
+      tl.to(morph, {
+        opacity: 0,
+        duration: fade,
+        ease: 'power2.inOut',
+        delay: 0.05,
       })
       return () => {
         tl.kill()
       }
     }
 
+    // Browser → morph (fade in over browser) → unmount browser → shrink → fade to desk.
     gsap.set(morph, {
       display: 'block',
       left: 0,
       top: 0,
       width: vw,
       height: vh,
-      opacity: 1,
+      opacity: 0,
       borderRadius: 0,
     })
     const tl = gsap.timeline({
@@ -109,13 +126,26 @@ export default function App() {
       },
     })
     tl.to(morph, {
+      opacity: 1,
+      duration: fade,
+      ease: 'power2.inOut',
+    })
+    tl.add(() => {
+      setBrowserOpen(false)
+    })
+    tl.to(morph, {
       left: fromRect.left,
       top: fromRect.top,
       width: fromRect.width,
       height: fromRect.height,
       borderRadius: 2,
-      duration: 0.9,
+      duration: SCREEN_ZOOM.morphDurationOut,
       ease: 'power3.inOut',
+    })
+    tl.to(morph, {
+      opacity: 0,
+      duration: fade,
+      ease: 'power2.inOut',
     })
     return () => {
       tl.kill()
@@ -131,13 +161,16 @@ export default function App() {
     ['--screen-h' as string]: String(SCREEN_RECT.height),
   }
 
+  const showDesk =
+    mode === 'desk' || mode === 'desktop' || browserOpen || deskMode === 'zooming'
+
   return (
     <div className="app-shell">
       {mode === 'home' && <HomeView onEnterMisc={enterDesk} />}
 
-      {(mode === 'desk' || mode === 'desktop') && (
+      {showDesk && (
         <DeskScene
-          mode={deskMode}
+          mode={deskMode === 'desktop' ? 'desktop' : deskMode}
           onOpenDesktop={openDesktop}
           onOpenSketchbook={openSketchbook}
           onExitSketchbook={exitSketchbook}
@@ -154,9 +187,7 @@ export default function App() {
         />
       </div>
 
-      {mode === 'desktop' && deskMode === 'desktop' && (
-        <DesktopBrowser active onExit={closeDesktop} />
-      )}
+      {browserOpen && <DesktopBrowser active onExit={closeDesktop} />}
     </div>
   )
 }

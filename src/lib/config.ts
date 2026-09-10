@@ -8,6 +8,14 @@ export const SCREEN_RECT = {
 
 export const SCREEN_PIXELS = { width: 772, height: 435 } as const
 
+/** Monitor click morph ↔ fullscreen browser. */
+export const SCREEN_ZOOM = {
+  morphDurationIn: 1.05,
+  morphDurationOut: 0.9,
+  /** Crossfade at desk↔morph and morph↔browser handoffs. */
+  crossfade: 0.4,
+} as const
+
 /**
  * Gallery wall hover region (image-normalized). Screen + notebook hotspots
  * sit above this so they keep their own hints / clicks.
