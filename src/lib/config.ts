@@ -92,13 +92,13 @@ export const SKETCHBOOK = {
   blankRight: '/sketchbook-page-blank-right.png',
   /**
    * Drawing spreads — shown side-by-side (left | right).
-   * Order: 5|6, then 1|2, then 3|4.
+   * Order: 6|5, then 1|2, then 3|4.
    */
   spreads: [
     {
-      id: '5-6',
-      left: '/drawings/drawing-5.jpg',
-      right: '/drawings/drawing-6.jpg',
+      id: '6-5',
+      left: '/drawings/drawing-6.jpg',
+      right: '/drawings/drawing-5.jpg',
     },
     {
       id: '1-2',
