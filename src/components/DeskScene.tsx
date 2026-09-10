@@ -58,12 +58,15 @@ function playVideoReverse(
   video: HTMLVideoElement,
   onDone: () => void,
   rate = 1,
+  /** Stop and fire onDone when currentTime reaches this (seconds). */
+  stopAt = 0.02,
 ): () => void {
   let cancelled = false
   let raf = 0
   const fps = 30
   const step = (1 / fps) * Math.max(0.25, rate)
   let last = performance.now()
+  const threshold = Math.max(0, stopAt)
 
   const tick = (now: number) => {
     if (cancelled) return
@@ -72,9 +75,9 @@ function playVideoReverse(
       last = now
       const next = Math.max(0, video.currentTime - step)
       video.currentTime = next
-      if (next <= 0.02) {
+      if (next <= threshold) {
         video.pause()
-        video.currentTime = 0
+        video.currentTime = threshold <= 0.02 ? 0 : threshold
         onDone()
         return
       }
@@ -231,44 +234,78 @@ export function DeskScene({
       if (hasVideo && video) {
         setVideoPlaying(true)
         gsap.set(video, { autoAlpha: 1 })
-        video.playbackRate = NOTEBOOK.zoomPlaybackRate
-        video.currentTime = 0
+        const rate = NOTEBOOK.zoomPlaybackRate
         const lead = NOTEBOOK.zoomHandoffLead
-        let handedOff = false
+        const zoomOut = NOTEBOOK.zoomVideoIsZoomOut
 
-        const tryHandoff = () => {
-          if (handedOff) return
-          const dur = video.duration
-          if (!Number.isFinite(dur) || dur <= 0) return
-          if (video.currentTime >= dur - lead) {
+        const seekReady = (fn: () => void) => {
+          if (Number.isFinite(video.duration) && video.duration > 0) {
+            fn()
+            return
+          }
+          const onMeta = () => {
+            video.removeEventListener('loadedmetadata', onMeta)
+            fn()
+          }
+          video.addEventListener('loadedmetadata', onMeta)
+        }
+
+        if (zoomOut) {
+          // Clip is book → desk. Enter = reverse from desk to book.
+          seekReady(() => {
+            video.pause()
+            video.currentTime = Math.max(0, video.duration - 0.04)
+            reverseCancelRef.current = playVideoReverse(
+              video,
+              handoffToOverhead,
+              rate,
+              lead,
+            )
+          })
+        } else {
+          // Clip is desk → book. Enter = play forward to end.
+          video.playbackRate = rate
+          video.currentTime = 0
+          let handedOff = false
+
+          const tryHandoff = () => {
+            if (handedOff) return
+            const dur = video.duration
+            if (!Number.isFinite(dur) || dur <= 0) return
+            if (video.currentTime >= dur - lead) {
+              handedOff = true
+              video.removeEventListener('timeupdate', onTime)
+              video.removeEventListener('ended', onEnded)
+              handoffToOverhead()
+            }
+          }
+
+          const onTime = () => tryHandoff()
+          const onEnded = () => {
+            if (handedOff) return
+            handedOff = true
+            video.removeEventListener('timeupdate', onTime)
+            handoffToOverhead()
+          }
+
+          video.addEventListener('timeupdate', onTime)
+          video.addEventListener('ended', onEnded)
+          void video.play().catch(() => {
             handedOff = true
             video.removeEventListener('timeupdate', onTime)
             video.removeEventListener('ended', onEnded)
             handoffToOverhead()
+          })
+
+          return () => {
+            video.removeEventListener('timeupdate', onTime)
+            video.removeEventListener('ended', onEnded)
+            sketchTlRef.current?.kill()
+            reverseCancelRef.current?.()
           }
         }
 
-        const onTime = () => tryHandoff()
-        const onEnded = () => {
-          if (handedOff) return
-          handedOff = true
-          video.removeEventListener('timeupdate', onTime)
-          handoffToOverhead()
-        }
-
-        video.addEventListener('timeupdate', onTime)
-        video.addEventListener('ended', onEnded)
-        void video.play().catch(() => {
-          // Autoplay blocked — jump straight to overhead.
-          handedOff = true
-          video.removeEventListener('timeupdate', onTime)
-          video.removeEventListener('ended', onEnded)
-          handoffToOverhead()
-        })
-
         return () => {
-          video.removeEventListener('timeupdate', onTime)
-          video.removeEventListener('ended', onEnded)
           sketchTlRef.current?.kill()
           reverseCancelRef.current?.()
         }
@@ -322,29 +359,52 @@ export function DeskScene({
           video.currentTime = 0
         }
 
-        const startReverse = () => {
+        const zoomOut = NOTEBOOK.zoomVideoIsZoomOut
+        const rate = NOTEBOOK.zoomPlaybackRate
+
+        const startExitPlayback = () => {
           setVideoPlaying(true)
           gsap.set(video, { autoAlpha: 1 })
-          reverseCancelRef.current = playVideoReverse(
-            video,
-            finishExit,
-            NOTEBOOK.zoomPlaybackRate,
-          )
+          if (zoomOut) {
+            // Clip is book → desk. Exit = play forward from book.
+            video.playbackRate = rate
+            if (!Number.isFinite(video.duration) || video.currentTime > 0.05) {
+              video.currentTime = 0
+            }
+            const onEnded = () => {
+              video.removeEventListener('ended', onEnded)
+              finishExit()
+            }
+            video.addEventListener('ended', onEnded)
+            void video.play().catch(() => {
+              video.removeEventListener('ended', onEnded)
+              finishExit()
+            })
+            reverseCancelRef.current = () => {
+              video.removeEventListener('ended', onEnded)
+              video.pause()
+            }
+          } else {
+            // Clip is desk → book. Exit = reverse from book to desk.
+            if (Number.isFinite(video.duration) && video.duration > 0) {
+              video.currentTime = Math.max(0, video.duration - 0.04)
+            }
+            reverseCancelRef.current = playVideoReverse(video, finishExit, rate)
+          }
         }
 
         const overheadVisible =
           Number(gsap.getProperty(overhead, 'autoAlpha')) > 0.01
 
         if (overheadVisible) {
-          // Seek video to end so reverse starts from the overhead pose.
-          const seekEnd = () => {
-            if (Number.isFinite(video.duration) && video.duration > 0) {
-              video.currentTime = Math.max(0, video.duration - 0.04)
-            }
+          // Align video to the book end of the clip before revealing it.
+          if (zoomOut) {
+            video.currentTime = 0
+          } else if (Number.isFinite(video.duration) && video.duration > 0) {
+            video.currentTime = Math.max(0, video.duration - 0.04)
           }
-          seekEnd()
           const tl = gsap.timeline({
-            onComplete: startReverse,
+            onComplete: startExitPlayback,
           })
           sketchTlRef.current = tl
           tl.to(overhead, {
@@ -360,7 +420,7 @@ export function DeskScene({
             0,
           )
         } else {
-          startReverse()
+          startExitPlayback()
         }
 
         return () => {
