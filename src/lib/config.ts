@@ -70,6 +70,8 @@ export const NOTEBOOK = {
   zoomEdgeSkipDesk: 0.1,
   /** Instant cut to overhead this many seconds before the book end of the clip (media time). Keep tiny — only enough to avoid decoder edge glitches. */
   zoomHandoffLead: 0.02,
+  /** Crossfade duration from final zoom-in frame into the interactive overhead book. */
+  zoomHandoffFade: 0.4,
   zoom: {
     scale: 4.0,
     rotateZ: 4,

@@ -283,15 +283,23 @@ export function DeskScene({
     gsap.set(scene, { transformOrigin: origin, force3D: true })
 
     const handoffToOverhead = () => {
-      // Instant cut on the book frame. A crossfade leaves both layers
-      // semi-transparent and the desk/monitor flashes through underneath.
-      gsap.set(overhead, { autoAlpha: 1, scale: 1 })
+      // Fade the interactive overhead in on top of the paused last video frame.
+      // Keep the video fully opaque underneath so the desk never shows through.
+      if (video) video.pause()
       setPagesActive(true)
-      if (video) {
-        video.pause()
-        gsap.set(video, { autoAlpha: 0 })
-      }
-      setVideoPlaying(false)
+      gsap.set(overhead, { scale: 1, autoAlpha: 0 })
+      const tl = gsap.timeline({
+        onComplete: () => {
+          if (video) gsap.set(video, { autoAlpha: 0 })
+          setVideoPlaying(false)
+        },
+      })
+      sketchTlRef.current = tl
+      tl.to(overhead, {
+        autoAlpha: 1,
+        duration: NOTEBOOK.zoomHandoffFade,
+        ease: 'power2.inOut',
+      })
     }
 
     if (mode === 'sketchbook' && prev !== 'sketchbook') {
