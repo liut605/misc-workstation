@@ -93,6 +93,56 @@ function playVideoReverse(
   }
 }
 
+/** Seek and resolve only after the target frame is painted (avoids flashing frame 0). */
+function seekVideoTo(video: HTMLVideoElement, time: number): Promise<void> {
+  return new Promise((resolve) => {
+    const target = Math.max(0, time)
+    const closeEnough =
+      Number.isFinite(video.currentTime) &&
+      Math.abs(video.currentTime - target) < 0.05 &&
+      video.readyState >= 2
+
+    if (closeEnough) {
+      resolve()
+      return
+    }
+
+    let done = false
+    const finish = () => {
+      if (done) return
+      done = true
+      video.removeEventListener('seeked', finish)
+      window.clearTimeout(fallback)
+      resolve()
+    }
+
+    const fallback = window.setTimeout(finish, 400)
+    video.addEventListener('seeked', finish)
+    video.pause()
+    try {
+      video.currentTime = target
+    } catch {
+      finish()
+    }
+  })
+}
+
+function whenVideoDurationReady(
+  video: HTMLVideoElement,
+  fn: () => void,
+): () => void {
+  if (Number.isFinite(video.duration) && video.duration > 0) {
+    fn()
+    return () => {}
+  }
+  const onMeta = () => {
+    video.removeEventListener('loadedmetadata', onMeta)
+    fn()
+  }
+  video.addEventListener('loadedmetadata', onMeta)
+  return () => video.removeEventListener('loadedmetadata', onMeta)
+}
+
 export function DeskScene({
   mode,
   onOpenDesktop,
@@ -117,6 +167,15 @@ export function DeskScene({
   const [wallHint, setWallHint] = useState(false)
   const [pagesActive, setPagesActive] = useState(false)
   const [videoPlaying, setVideoPlaying] = useState(false)
+
+  // Park zoom-out clip on the desk end-frame while idle so enter never paints frame 0.
+  useEffect(() => {
+    const video = zoomVideoRef.current
+    if (!video || !NOTEBOOK.zoomVideo || !NOTEBOOK.zoomVideoIsZoomOut) return
+    return whenVideoDurationReady(video, () => {
+      void seekVideoTo(video, Math.max(0, video.duration - 0.04))
+    })
+  }, [])
 
   useLayoutEffect(() => {
     const scene = sceneRef.current
@@ -234,43 +293,36 @@ export function DeskScene({
 
       if (hasVideo && video) {
         setVideoPlaying(true)
-        gsap.set(video, { autoAlpha: 1 })
+        // Stay hidden until the enter start-frame is seeked — zoom-out clips
+        // otherwise flash frame 0 (enlarged notebook) for a beat.
+        gsap.set(video, { autoAlpha: 0 })
         const rate = NOTEBOOK.zoomPlaybackRate
         const lead = NOTEBOOK.zoomHandoffLead
         const zoomOut = NOTEBOOK.zoomVideoIsZoomOut
-
-        const seekReady = (fn: () => void) => {
-          if (Number.isFinite(video.duration) && video.duration > 0) {
-            fn()
-            return
-          }
-          const onMeta = () => {
-            video.removeEventListener('loadedmetadata', onMeta)
-            fn()
-          }
-          video.addEventListener('loadedmetadata', onMeta)
-        }
+        let cancelled = false
+        let disposeMeta: (() => void) | null = null
 
         if (zoomOut) {
           // Clip is book → desk. Enter = reverse from desk to book.
-          seekReady(() => {
-            video.pause()
-            video.currentTime = Math.max(0, video.duration - 0.04)
-            reverseCancelRef.current = playVideoReverse(
-              video,
-              handoffToOverhead,
-              rate,
-              lead,
-            )
+          disposeMeta = whenVideoDurationReady(video, () => {
+            const end = Math.max(0, video.duration - 0.04)
+            void seekVideoTo(video, end).then(() => {
+              if (cancelled) return
+              gsap.set(video, { autoAlpha: 1 })
+              reverseCancelRef.current = playVideoReverse(
+                video,
+                handoffToOverhead,
+                rate,
+                lead,
+              )
+            })
           })
         } else {
-          // Clip is desk → book. Enter = play forward to end.
-          video.playbackRate = rate
-          video.currentTime = 0
+          // Clip is desk → book. Enter = play forward from start.
           let handedOff = false
 
           const tryHandoff = () => {
-            if (handedOff) return
+            if (handedOff || cancelled) return
             const dur = video.duration
             if (!Number.isFinite(dur) || dur <= 0) return
             if (video.currentTime >= dur - lead) {
@@ -283,22 +335,32 @@ export function DeskScene({
 
           const onTime = () => tryHandoff()
           const onEnded = () => {
-            if (handedOff) return
+            if (handedOff || cancelled) return
             handedOff = true
             video.removeEventListener('timeupdate', onTime)
             handoffToOverhead()
           }
 
-          video.addEventListener('timeupdate', onTime)
-          video.addEventListener('ended', onEnded)
-          void video.play().catch(() => {
-            handedOff = true
-            video.removeEventListener('timeupdate', onTime)
-            video.removeEventListener('ended', onEnded)
-            handoffToOverhead()
+          disposeMeta = whenVideoDurationReady(video, () => {
+            void seekVideoTo(video, 0).then(() => {
+              if (cancelled) return
+              video.playbackRate = rate
+              gsap.set(video, { autoAlpha: 1 })
+              video.addEventListener('timeupdate', onTime)
+              video.addEventListener('ended', onEnded)
+              void video.play().catch(() => {
+                if (cancelled) return
+                handedOff = true
+                video.removeEventListener('timeupdate', onTime)
+                video.removeEventListener('ended', onEnded)
+                handoffToOverhead()
+              })
+            })
           })
 
           return () => {
+            cancelled = true
+            disposeMeta?.()
             video.removeEventListener('timeupdate', onTime)
             video.removeEventListener('ended', onEnded)
             sketchTlRef.current?.kill()
@@ -307,6 +369,8 @@ export function DeskScene({
         }
 
         return () => {
+          cancelled = true
+          disposeMeta?.()
           sketchTlRef.current?.kill()
           reverseCancelRef.current?.()
         }
@@ -357,40 +421,60 @@ export function DeskScene({
           gsap.set(overhead, { autoAlpha: 0, scale: 1.02 })
           gsap.set(scene, { x: 0, y: 0, scale: 1, rotation: 0 })
           video.pause()
-          video.currentTime = 0
+          // Park on the desk end-frame so the next enter doesn't flash frame 0.
+          if (
+            NOTEBOOK.zoomVideoIsZoomOut &&
+            Number.isFinite(video.duration) &&
+            video.duration > 0
+          ) {
+            video.currentTime = Math.max(0, video.duration - 0.04)
+          } else {
+            video.currentTime = 0
+          }
         }
 
         const zoomOut = NOTEBOOK.zoomVideoIsZoomOut
         const rate = NOTEBOOK.zoomPlaybackRate
+        let cancelled = false
 
         const startExitPlayback = () => {
+          if (cancelled) return
           setVideoPlaying(true)
-          gsap.set(video, { autoAlpha: 1 })
           if (zoomOut) {
-            // Clip is book → desk. Exit = play forward from book.
-            video.playbackRate = rate
-            if (!Number.isFinite(video.duration) || video.currentTime > 0.05) {
-              video.currentTime = 0
-            }
-            const onEnded = () => {
-              video.removeEventListener('ended', onEnded)
-              finishExit()
-            }
-            video.addEventListener('ended', onEnded)
-            void video.play().catch(() => {
-              video.removeEventListener('ended', onEnded)
-              finishExit()
+            // Clip is book → desk. Exit = play forward from book (frame 0).
+            void seekVideoTo(video, 0).then(() => {
+              if (cancelled) return
+              video.playbackRate = rate
+              gsap.set(video, { autoAlpha: 1 })
+              const onEnded = () => {
+                video.removeEventListener('ended', onEnded)
+                finishExit()
+              }
+              video.addEventListener('ended', onEnded)
+              void video.play().catch(() => {
+                video.removeEventListener('ended', onEnded)
+                finishExit()
+              })
+              reverseCancelRef.current = () => {
+                video.removeEventListener('ended', onEnded)
+                video.pause()
+              }
             })
-            reverseCancelRef.current = () => {
-              video.removeEventListener('ended', onEnded)
-              video.pause()
-            }
           } else {
             // Clip is desk → book. Exit = reverse from book to desk.
-            if (Number.isFinite(video.duration) && video.duration > 0) {
-              video.currentTime = Math.max(0, video.duration - 0.04)
-            }
-            reverseCancelRef.current = playVideoReverse(video, finishExit, rate)
+            const end =
+              Number.isFinite(video.duration) && video.duration > 0
+                ? Math.max(0, video.duration - 0.04)
+                : 0
+            void seekVideoTo(video, end).then(() => {
+              if (cancelled) return
+              gsap.set(video, { autoAlpha: 1 })
+              reverseCancelRef.current = playVideoReverse(
+                video,
+                finishExit,
+                rate,
+              )
+            })
           }
         }
 
@@ -399,32 +483,36 @@ export function DeskScene({
 
         if (overheadVisible) {
           // Align video to the book end of the clip before revealing it.
-          if (zoomOut) {
-            video.currentTime = 0
-          } else if (Number.isFinite(video.duration) && video.duration > 0) {
-            video.currentTime = Math.max(0, video.duration - 0.04)
-          }
-          const tl = gsap.timeline({
-            onComplete: startExitPlayback,
+          const bookTime = zoomOut
+            ? 0
+            : Number.isFinite(video.duration) && video.duration > 0
+              ? Math.max(0, video.duration - 0.04)
+              : 0
+          void seekVideoTo(video, bookTime).then(() => {
+            if (cancelled) return
+            const tl = gsap.timeline({
+              onComplete: startExitPlayback,
+            })
+            sketchTlRef.current = tl
+            tl.to(overhead, {
+              autoAlpha: 0,
+              scale: 1.02,
+              duration: 0.28,
+              ease: 'power2.in',
+            })
+            tl.fromTo(
+              video,
+              { autoAlpha: 0 },
+              { autoAlpha: 1, duration: 0.2, ease: 'power1.out' },
+              0,
+            )
           })
-          sketchTlRef.current = tl
-          tl.to(overhead, {
-            autoAlpha: 0,
-            scale: 1.02,
-            duration: 0.28,
-            ease: 'power2.in',
-          })
-          tl.fromTo(
-            video,
-            { autoAlpha: 0 },
-            { autoAlpha: 1, duration: 0.2, ease: 'power1.out' },
-            0,
-          )
         } else {
           startExitPlayback()
         }
 
         return () => {
+          cancelled = true
           sketchTlRef.current?.kill()
           reverseCancelRef.current?.()
         }
