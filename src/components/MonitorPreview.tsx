@@ -1,14 +1,20 @@
 import { useLayoutEffect, useRef } from 'react'
-import { BROWSER_TABS, type AppTab } from '../lib/config'
+import {
+  BROWSER_TABS,
+  SCREEN_PIXELS,
+  type AppTab,
+} from '../lib/config'
 import './MonitorPreview.css'
 
+/** Desktop canvas matching the iMac screen aspect (from SCREEN_PIXELS). */
+const SCREEN_ASPECT = SCREEN_PIXELS.width / SCREEN_PIXELS.height
 const DESKTOP_W = 1440
-const DESKTOP_H = 900
+const DESKTOP_H = Math.round(DESKTOP_W / SCREEN_ASPECT)
 
 type MonitorPreviewProps = {
   tabId: string
   className?: string
-  /** Scale a desktop-sized page into the box so sites stay readable and fit the screen. */
+  /** Scale a desktop-sized page into the box so sites stay readable and fill the screen. */
   scaleDesktop?: boolean
 }
 
@@ -18,7 +24,7 @@ function resolveTab(tabId: string): AppTab {
 
 /**
  * Last-viewed browser page on the desk iMac screen.
- * Scales a fixed desktop canvas into the screen rect so content fits the bezel.
+ * Uses the same aspect ratio as SCREEN_PIXELS so the preview fills the bezel.
  */
 export function MonitorPreview({
   tabId,
@@ -35,11 +41,14 @@ export function MonitorPreview({
     const stage = stageRef.current
     if (!root || !stage) return
 
+    stage.style.width = `${DESKTOP_W}px`
+    stage.style.height = `${DESKTOP_H}px`
+
     const fit = () => {
       const w = root.clientWidth
       const h = root.clientHeight
       if (w <= 0 || h <= 0) return
-      // Contain: entire desktop canvas fits inside the screen rect.
+      // Aspects match the monitor, so this fills the screen edge-to-edge.
       const s = Math.min(w / DESKTOP_W, h / DESKTOP_H)
       const ox = (w - DESKTOP_W * s) / 2
       const oy = (h - DESKTOP_H * s) / 2
@@ -61,6 +70,7 @@ export function MonitorPreview({
               title={`${tab.label} preview`}
               src={tab.url}
               className="monitor-preview__frame"
+              style={{ width: DESKTOP_W, height: DESKTOP_H }}
               tabIndex={-1}
               loading="lazy"
             />

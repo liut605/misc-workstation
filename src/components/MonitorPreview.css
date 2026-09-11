@@ -10,16 +10,13 @@
   position: absolute;
   top: 0;
   left: 0;
-  width: 1440px;
-  height: 900px;
+  /* width/height set in JS to match iMac screen aspect */
   transform-origin: top left;
   will-change: transform;
 }
 
 .monitor-preview__frame {
   display: block;
-  width: 1440px;
-  height: 900px;
   border: 0;
   background: #fff;
   pointer-events: none;
