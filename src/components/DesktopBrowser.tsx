@@ -1,18 +1,24 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { BROWSER_TABS, type AppTab } from '../lib/config'
 import './DesktopBrowser.css'
 
 type DesktopBrowserProps = {
   active: boolean
+  activeTabId: string
+  onActiveTabChange: (tabId: string) => void
   onExit: () => void
 }
 
-export function DesktopBrowser({ active, onExit }: DesktopBrowserProps) {
-  const [tabs] = useState(BROWSER_TABS)
-  const [activeId, setActiveId] = useState(BROWSER_TABS[0].id)
+export function DesktopBrowser({
+  active,
+  activeTabId,
+  onActiveTabChange,
+  onExit,
+}: DesktopBrowserProps) {
   const shellRef = useRef<HTMLDivElement>(null)
-  const activeTab = tabs.find((t) => t.id === activeId) ?? tabs[0]
+  const activeTab =
+    BROWSER_TABS.find((t) => t.id === activeTabId) ?? BROWSER_TABS[0]
 
   useEffect(() => {
     if (!shellRef.current) return
@@ -42,12 +48,12 @@ export function DesktopBrowser({ active, onExit }: DesktopBrowserProps) {
       <div className="browser-window" role="dialog" aria-label="Browser">
         <div className="browser-titlebar">
           <div className="tab-strip" role="tablist" aria-label="Browser tabs">
-            {tabs.map((tab) => (
+            {BROWSER_TABS.map((tab) => (
               <TabButton
                 key={tab.id}
                 tab={tab}
-                selected={tab.id === activeId}
-                onSelect={() => setActiveId(tab.id)}
+                selected={tab.id === activeTab.id}
+                onSelect={() => onActiveTabChange(tab.id)}
               />
             ))}
           </div>

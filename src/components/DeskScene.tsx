@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { DESK_IMAGE, NOTEBOOK, OVERHEAD_IMAGE, SCREEN_RECT, WALL } from '../lib/config'
+import { MonitorPreview } from './MonitorPreview'
 import { SketchbookPages } from './SketchbookPages'
 import './DeskScene.css'
 
@@ -15,6 +16,8 @@ export type DeskMode = 'room' | 'zooming' | 'desktop' | 'sketchbook'
 
 type DeskSceneProps = {
   mode: DeskMode
+  /** Last browser tab — painted onto the iMac so zoom-out keeps that page visible. */
+  monitorTabId: string
   onOpenDesktop: (screenRect: ScreenRect) => void
   onOpenSketchbook: () => void
   onExitSketchbook: () => void
@@ -167,6 +170,7 @@ function whenVideoDurationReady(
 
 export function DeskScene({
   mode,
+  monitorTabId,
   onOpenDesktop,
   onOpenSketchbook,
   onExitSketchbook,
@@ -733,6 +737,20 @@ export function DeskScene({
               height: `${WALL.height * 100}%`,
             }}
           />
+
+          {/* Live last-tab content on the iMac — hidden while fully in desktop mode. */}
+          <div
+            className={`screen-surface ${mode === 'desktop' ? 'is-hidden' : ''}`}
+            style={{
+              left: `${SCREEN_RECT.left * 100}%`,
+              top: `${SCREEN_RECT.top * 100}%`,
+              width: `${SCREEN_RECT.width * 100}%`,
+              height: `${SCREEN_RECT.height * 100}%`,
+            }}
+            aria-hidden
+          >
+            <MonitorPreview tabId={monitorTabId} />
+          </div>
 
           <button
             ref={hotspotRef}

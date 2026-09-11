@@ -3,7 +3,8 @@ import gsap from 'gsap'
 import { DeskScene, type DeskMode } from './components/DeskScene'
 import { DesktopBrowser } from './components/DesktopBrowser'
 import { HomeView } from './components/HomeView'
-import { SCREEN_RECT, SCREEN_ZOOM } from './lib/config'
+import { MonitorPreview } from './components/MonitorPreview'
+import { BROWSER_TABS, SCREEN_ZOOM } from './lib/config'
 import './App.css'
 
 type Mode = 'home' | 'desk' | 'desktop'
@@ -16,6 +17,8 @@ export default function App() {
   const [fromRect, setFromRect] = useState<ScreenRect | null>(null)
   /** Keeps the browser mounted through enter/exit morph crossfades. */
   const [browserOpen, setBrowserOpen] = useState(false)
+  /** Survives close so the desk monitor + next enter restore the same page. */
+  const [activeTabId, setActiveTabId] = useState(BROWSER_TABS[0].id)
   const zoomDirection = useRef<'in' | 'out'>('in')
 
   const sceneRef = useRef<HTMLDivElement>(null)
@@ -110,6 +113,7 @@ export default function App() {
     }
 
     // Browser → morph (fade in over browser) → unmount browser → shrink → fade to desk.
+    // Morph shows the same last tab the desk monitor will keep displaying.
     gsap.set(morph, {
       display: 'block',
       left: 0,
@@ -152,15 +156,6 @@ export default function App() {
     }
   }, [deskMode, mode, fromRect])
 
-  // Crop the baked-in monitor region out of desk-final.jpg so the morph
-  // matches the room photo (no separate screen-idle screenshot).
-  const morphCropStyle = {
-    ['--screen-l' as string]: String(SCREEN_RECT.left),
-    ['--screen-t' as string]: String(SCREEN_RECT.top),
-    ['--screen-w' as string]: String(SCREEN_RECT.width),
-    ['--screen-h' as string]: String(SCREEN_RECT.height),
-  }
-
   const showDesk =
     mode === 'desk' || mode === 'desktop' || browserOpen || deskMode === 'zooming'
 
@@ -171,6 +166,7 @@ export default function App() {
       {showDesk && (
         <DeskScene
           mode={deskMode === 'desktop' ? 'desktop' : deskMode}
+          monitorTabId={activeTabId}
           onOpenDesktop={openDesktop}
           onOpenSketchbook={openSketchbook}
           onExitSketchbook={exitSketchbook}
@@ -179,15 +175,18 @@ export default function App() {
         />
       )}
 
-      <div ref={morphRef} className="screen-morph" style={morphCropStyle} aria-hidden>
-        <img
-          src="/desk-final.jpg"
-          alt=""
-          className="screen-morph__img"
-        />
+      <div ref={morphRef} className="screen-morph" aria-hidden>
+        <MonitorPreview tabId={activeTabId} className="screen-morph__preview" />
       </div>
 
-      {browserOpen && <DesktopBrowser active onExit={closeDesktop} />}
+      {browserOpen && (
+        <DesktopBrowser
+          active
+          activeTabId={activeTabId}
+          onActiveTabChange={setActiveTabId}
+          onExit={closeDesktop}
+        />
+      )}
     </div>
   )
 }

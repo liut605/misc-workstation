@@ -18,18 +18,7 @@
   background: #1c1916;
 }
 
-/* Full desk still, positioned so SCREEN_RECT fills the morph box. */
-.screen-morph__img {
+.screen-morph__preview {
   position: absolute;
-  display: block;
-  width: calc(100% / var(--screen-w));
-  height: calc(100% / var(--screen-h));
-  left: calc(-100% * var(--screen-l) / var(--screen-w));
-  top: calc(-100% * var(--screen-t) / var(--screen-h));
-  max-width: none;
-  object-fit: fill;
-  border: 0;
-  pointer-events: none;
-  user-select: none;
-  -webkit-user-drag: none;
+  inset: 0;
 }

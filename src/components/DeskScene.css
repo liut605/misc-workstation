@@ -46,6 +46,18 @@
   border-radius: 0;
 }
 
+.screen-surface {
+  position: absolute;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+  background: #1c1916;
+}
+
+.screen-surface.is-hidden {
+  opacity: 0;
+}
+
 .screen-hotspot:disabled {
   cursor: default;
 }
