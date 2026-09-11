@@ -7,9 +7,9 @@ import {
 import './DesktopBrowser.css'
 import './MonitorPreview.css'
 
-/** Desktop canvas matching the iMac screen aspect (from SCREEN_PIXELS). */
+/** Logical canvas for the desk preview — smaller than fullscreen so chrome stays readable when scaled into the bezel. */
 const SCREEN_ASPECT = SCREEN_PIXELS.width / SCREEN_PIXELS.height
-const DESKTOP_W = 1440
+const DESKTOP_W = 960
 const DESKTOP_H = Math.round(DESKTOP_W / SCREEN_ASPECT)
 
 type MonitorPreviewProps = {
@@ -42,11 +42,12 @@ export function MonitorPreview({ tabId, className = '' }: MonitorPreviewProps) {
       const w = root.clientWidth
       const h = root.clientHeight
       if (w <= 0 || h <= 0) return
-      // Cover + tiny overscale: contain-fit leaves 1–2px hairlines from
-      // aspect rounding / subpixels (especially top & right).
-      const s = Math.max(w / DESKTOP_W, h / DESKTOP_H) * 1.004
-      const ox = (w - DESKTOP_W * s) / 2
-      const oy = (h - DESKTOP_H * s) / 2
+      // Cover + overscale: contain-fit leaves hairline gaps; bias fill past
+      // the bezel so top/right never show the screen backing.
+      const s = Math.max(w / DESKTOP_W, h / DESKTOP_H) * 1.012
+      // Prefer clipping bottom/left slightly so the tab strip stays inside.
+      const ox = (w - DESKTOP_W * s) * 0.35
+      const oy = (h - DESKTOP_H * s) * 0.2
       stage.style.transform = `translate(${ox}px, ${oy}px) scale(${s})`
     }
 

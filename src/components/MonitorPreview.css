@@ -16,19 +16,67 @@
 }
 
 .monitor-preview__window {
-  /* Reuses .browser-window from DesktopBrowser.css */
   box-shadow: none;
 }
 
+/*
+ * Desk-scale chrome: even on a 960 canvas the iMac shrinks this ~2–3×.
+ * Oversized titlebar/tabs keep the strip readable in the workstation view.
+ */
+.monitor-preview .browser-titlebar {
+  gap: 12px;
+  padding: 14px 12px 0 16px;
+  min-height: 110px;
+  border-bottom-width: 2px;
+}
+
+.monitor-preview .tab-strip {
+  gap: 8px;
+}
+
 .monitor-preview .tab {
-  /* Non-interactive decoys — keep the same look as real tabs. */
+  max-width: none;
+  min-width: 0;
+  flex: 1 1 0;
+  height: 68px;
+  border-radius: 14px 14px 0 0;
+  background: rgba(0, 0, 0, 0.07);
+  color: #3f3f46;
   pointer-events: none;
   cursor: default;
 }
 
+.monitor-preview .tab.is-active {
+  background: #fff;
+  color: #111;
+  box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.05);
+}
+
+.monitor-preview .tab-main {
+  font-size: 28px;
+  font-weight: 650;
+  padding: 0 14px;
+  letter-spacing: -0.015em;
+}
+
 .monitor-preview__close-decoy {
+  width: 52px;
+  height: 52px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
   pointer-events: none;
   cursor: default;
+}
+
+.monitor-preview__close-decoy span {
+  width: 22px;
+  height: 22px;
+}
+
+.monitor-preview__close-decoy span::before,
+.monitor-preview__close-decoy span::after {
+  width: 22px;
+  height: 2.5px;
 }
 
 .monitor-preview .app-frame {
