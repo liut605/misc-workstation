@@ -1,4 +1,4 @@
-.app-root {
+.app-shell {
   min-height: 100dvh;
 }
 
@@ -6,8 +6,17 @@
   position: fixed;
   z-index: 50;
   overflow: hidden;
-  /* top/left/width/height driven by GSAP FLIP between screen and viewport */
+  box-sizing: border-box;
+  /* Black iMac bezel during morph; padding/size driven by GSAP */
+  background: #050505;
   pointer-events: auto;
-  will-change: top, left, width, height;
+  will-change: top, left, width, height, padding;
+}
+
+.desktop-browser-stage {
+  position: relative;
+  overflow: hidden;
   background: #fff;
+  transform-origin: 0 0;
+  will-change: transform;
 }

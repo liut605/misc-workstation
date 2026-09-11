@@ -22,13 +22,18 @@ export const COMPUTER_RECT = {
 /** Monitor click → fullscreen browser camera + chrome morph. */
 export const SCREEN_ZOOM = {
   /** Desk dolly + browser FLIP share this duration (enter). */
-  dollyDurationIn: 1.35,
+  dollyDurationIn: 1.45,
   /** Desk dolly + browser FLIP share this duration (exit). */
-  dollyDurationOut: 1.2,
+  dollyDurationOut: 1.25,
   /** Soften the desk under the expanding browser near the end of enter. */
   deskDim: 0.28,
   /** Push slightly past a perfect cover-fit so the move reads as a real lean-in. */
   overscale: 1.08,
+  /**
+   * Keep the black iMac bezel through most of the morph; fade it only after
+   * this progress (0–1) so the frame disappears near completion.
+   */
+  bezelFadeStart: 0.78,
 } as const
 
 /**
