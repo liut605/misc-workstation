@@ -3,7 +3,7 @@ import gsap from 'gsap'
 import { DeskScene, type DeskMode } from './components/DeskScene'
 import { DesktopBrowser } from './components/DesktopBrowser'
 import { HomeView } from './components/HomeView'
-import { BROWSER_TABS, COMPUTER_RECT, SCREEN_ZOOM } from './lib/config'
+import { BROWSER_TABS, COMPUTER_RECT, SCREEN_RECT, SCREEN_ZOOM } from './lib/config'
 import './App.css'
 
 type Mode = 'home' | 'desk' | 'desktop'
@@ -22,6 +22,41 @@ const IDENTITY: DollyPose = {
   y: 0,
   scale: 1,
   transformOrigin: '50% 50%',
+}
+
+function fullscreenRect(): ScreenRect {
+  return {
+    top: 0,
+    left: 0,
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }
+}
+
+/** Where the iMac screen sits when the desk scene is at identity (no dolly). */
+function identityScreenRect(scene: HTMLElement): ScreenRect {
+  const w = scene.offsetWidth
+  const h = scene.offsetHeight
+  // Scene is absolutely positioned; ignore GSAP x/y/scale for the layout box.
+  const parent = scene.parentElement
+  if (!parent) {
+    return {
+      left: SCREEN_RECT.left * w,
+      top: SCREEN_RECT.top * h,
+      width: SCREEN_RECT.width * w,
+      height: SCREEN_RECT.height * h,
+    }
+  }
+  const pr = parent.getBoundingClientRect()
+  // Cover-fit scene box matches offsetLeft/Top relative to the stage.
+  const left = pr.left + scene.offsetLeft + SCREEN_RECT.left * w
+  const top = pr.top + scene.offsetTop + SCREEN_RECT.top * h
+  return {
+    left,
+    top,
+    width: SCREEN_RECT.width * w,
+    height: SCREEN_RECT.height * h,
+  }
 }
 
 /** Camera pose that pushes the whole iMac to fill the viewport. */
@@ -51,17 +86,26 @@ function computerDollyPose(scene: HTMLElement): DollyPose {
   }
 }
 
+function applyWrapRect(el: HTMLElement, r: ScreenRect) {
+  gsap.set(el, {
+    top: r.top,
+    left: r.left,
+    width: r.width,
+    height: r.height,
+    opacity: 1,
+  })
+}
+
 export default function App() {
   const [mode, setMode] = useState<Mode>('home')
   const [deskMode, setDeskMode] = useState<DeskMode>('room')
   const [fromRect, setFromRect] = useState<ScreenRect | null>(null)
-  /** Keeps the browser mounted through enter/exit crossfades. */
+  /** Keeps the browser mounted through enter/exit morphs. */
   const [browserOpen, setBrowserOpen] = useState(false)
   /** Survives close so the desk monitor + next enter restore the same page. */
   const [activeTabId, setActiveTabId] = useState(BROWSER_TABS[0].id)
   const zoomDirection = useRef<'in' | 'out'>('in')
   const dollyRef = useRef<DollyPose>(IDENTITY)
-  const pendingFadeIn = useRef(false)
 
   const sceneRef = useRef<HTMLDivElement>(null)
   const browserWrapRef = useRef<HTMLDivElement>(null)
@@ -73,16 +117,26 @@ export default function App() {
 
   const backHome = useCallback(() => {
     setBrowserOpen(false)
+    setFromRect(null)
     setMode('home')
     setDeskMode('room')
     const scene = sceneRef.current
-    if (scene) gsap.set(scene, { x: 0, y: 0, scale: 1, transformOrigin: '50% 50%' })
+    if (scene) {
+      gsap.set(scene, {
+        x: 0,
+        y: 0,
+        scale: 1,
+        opacity: 1,
+        transformOrigin: '50% 50%',
+      })
+    }
     dollyRef.current = IDENTITY
   }, [])
 
   const openDesktop = useCallback((rect: ScreenRect) => {
     zoomDirection.current = 'in'
     setFromRect(rect)
+    setBrowserOpen(true)
     setDeskMode('zooming')
   }, [])
 
@@ -100,101 +154,148 @@ export default function App() {
     setDeskMode('room')
   }, [])
 
-  // After browser mounts for enter, crossfade it in over the zoomed computer.
   useLayoutEffect(() => {
-    if (!browserOpen || !pendingFadeIn.current) return
-    const wrap = browserWrapRef.current
-    if (!wrap) return
-    pendingFadeIn.current = false
-    gsap.fromTo(
-      wrap,
-      { opacity: 0 },
-      { opacity: 1, duration: SCREEN_ZOOM.crossfade, ease: 'power2.inOut' },
-    )
-  }, [browserOpen])
-
-  useLayoutEffect(() => {
-    if (deskMode !== 'zooming' || mode !== 'desk') return
+    if (deskMode !== 'zooming' || !browserOpen) return
     const scene = sceneRef.current
-    if (!scene) return
-
-    const fade = SCREEN_ZOOM.crossfade
+    const wrap = browserWrapRef.current
+    if (!scene || !wrap) return
 
     if (zoomDirection.current === 'in') {
-      // Dolly the whole desk photo into the iMac, then crossfade to the browser.
-      gsap.set(scene, { x: 0, y: 0, scale: 1 })
+      const start = fromRect ?? identityScreenRect(scene)
+      const end = fullscreenRect()
+      gsap.set(scene, { x: 0, y: 0, scale: 1, opacity: 1 })
       const pose = computerDollyPose(scene)
       dollyRef.current = pose
       gsap.set(scene, { transformOrigin: pose.transformOrigin })
+      applyWrapRect(wrap, start)
+      gsap.set(wrap, { pointerEvents: 'none' })
 
+      const dur = SCREEN_ZOOM.dollyDurationIn
       const tl = gsap.timeline({
         onComplete: () => {
+          applyWrapRect(wrap, fullscreenRect())
+          gsap.set(wrap, { pointerEvents: 'auto' })
           setMode('desktop')
           setDeskMode('desktop')
         },
       })
-      tl.to(scene, {
-        x: pose.x,
-        y: pose.y,
-        scale: pose.scale,
-        duration: SCREEN_ZOOM.dollyDurationIn,
-        ease: 'power3.inOut',
-      })
-      tl.add(() => {
-        pendingFadeIn.current = true
-        setBrowserOpen(true)
-      })
-      // Hold for the crossfade kicked off by the browserOpen effect above.
-      tl.to({}, { duration: fade })
+
+      // Desk leans into the iMac while the live browser expands from the
+      // screen bezel to fullscreen — tabs/chrome relocate with the wrap.
+      tl.to(
+        scene,
+        {
+          x: pose.x,
+          y: pose.y,
+          scale: pose.scale,
+          duration: dur,
+          ease: 'power2.inOut',
+        },
+        0,
+      )
+      tl.to(
+        wrap,
+        {
+          top: end.top,
+          left: end.left,
+          width: end.width,
+          height: end.height,
+          duration: dur,
+          ease: 'power2.inOut',
+        },
+        0,
+      )
+      tl.to(
+        scene,
+        {
+          opacity: SCREEN_ZOOM.deskDim,
+          duration: dur * 0.45,
+          ease: 'power1.in',
+        },
+        dur * 0.55,
+      )
 
       return () => {
         tl.kill()
       }
     }
 
-    // Exit: fade browser out over the already-zoomed computer, then pull back to the desk.
+    // Exit: shrink browser back onto the screen while the desk pulls out.
     const pose = dollyRef.current
     gsap.set(scene, {
       transformOrigin: pose.transformOrigin,
       x: pose.x,
       y: pose.y,
       scale: pose.scale,
+      opacity: SCREEN_ZOOM.deskDim,
     })
+    applyWrapRect(wrap, fullscreenRect())
+    gsap.set(wrap, { pointerEvents: 'none' })
+
+    const target = fromRect ?? identityScreenRect(scene)
+    const dur = SCREEN_ZOOM.dollyDurationOut
 
     const tl = gsap.timeline({
       onComplete: () => {
+        setBrowserOpen(false)
         setDeskMode('room')
         dollyRef.current = IDENTITY
+        gsap.set(scene, { x: 0, y: 0, scale: 1, opacity: 1 })
       },
     })
 
-    const wrap = browserWrapRef.current
-    if (wrap) {
-      gsap.set(wrap, { opacity: 1 })
-      tl.to(wrap, {
-        opacity: 0,
-        duration: fade,
+    tl.to(
+      scene,
+      {
+        opacity: 1,
+        duration: dur * 0.35,
+        ease: 'power1.out',
+      },
+      0,
+    )
+    tl.to(
+      wrap,
+      {
+        top: target.top,
+        left: target.left,
+        width: target.width,
+        height: target.height,
+        duration: dur,
         ease: 'power2.inOut',
-      })
-    }
-    tl.add(() => {
-      setBrowserOpen(false)
-    })
-    tl.to(scene, {
-      x: 0,
-      y: 0,
-      scale: 1,
-      duration: SCREEN_ZOOM.dollyDurationOut,
-      ease: 'power3.inOut',
-    })
+      },
+      0,
+    )
+    tl.to(
+      scene,
+      {
+        x: 0,
+        y: 0,
+        scale: 1,
+        duration: dur,
+        ease: 'power2.inOut',
+      },
+      0,
+    )
 
     return () => {
       tl.kill()
     }
-  }, [deskMode, mode, fromRect])
+  }, [deskMode, browserOpen, fromRect])
 
   const showDesk =
     mode === 'desk' || mode === 'desktop' || browserOpen || deskMode === 'zooming'
+
+  const wrapStyle =
+    deskMode === 'desktop' || mode === 'desktop'
+      ? ({ top: 0, left: 0, width: '100vw', height: '100dvh' } as const)
+      : fromRect
+        ? {
+            top: fromRect.top,
+            left: fromRect.left,
+            width: fromRect.width,
+            height: fromRect.height,
+          }
+        : ({ top: 0, left: 0, width: '100vw', height: '100dvh' } as const)
 
   return (
     <div className="app-shell">
@@ -213,7 +314,11 @@ export default function App() {
       )}
 
       {browserOpen && (
-        <div ref={browserWrapRef} className="desktop-browser-wrap">
+        <div
+          ref={browserWrapRef}
+          className="desktop-browser-wrap"
+          style={wrapStyle}
+        >
           <DesktopBrowser
             active
             activeTabId={activeTabId}

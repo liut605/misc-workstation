@@ -22,7 +22,6 @@ export function DesktopBrowser({
 
   useEffect(() => {
     if (!shellRef.current) return
-    // Appear instantly when active so the morph→desktop handoff does not flash/jump.
     gsap.set(shellRef.current, {
       opacity: active ? 1 : 0,
       pointerEvents: active ? 'auto' : 'none',
@@ -43,7 +42,6 @@ export function DesktopBrowser({
       ref={shellRef}
       className="desktop-shell"
       aria-hidden={!active}
-      style={{ opacity: 0, pointerEvents: 'none' }}
     >
       <div className="browser-window" role="dialog" aria-label="Browser">
         <div className="browser-titlebar">

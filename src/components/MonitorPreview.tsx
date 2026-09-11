@@ -4,6 +4,7 @@ import {
   SCREEN_PIXELS,
   type AppTab,
 } from '../lib/config'
+import './DesktopBrowser.css'
 import './MonitorPreview.css'
 
 /** Desktop canvas matching the iMac screen aspect (from SCREEN_PIXELS). */
@@ -14,8 +15,6 @@ const DESKTOP_H = Math.round(DESKTOP_W / SCREEN_ASPECT)
 type MonitorPreviewProps = {
   tabId: string
   className?: string
-  /** Scale a desktop-sized page into the box so sites stay readable and fill the screen. */
-  scaleDesktop?: boolean
 }
 
 function resolveTab(tabId: string): AppTab {
@@ -23,20 +22,15 @@ function resolveTab(tabId: string): AppTab {
 }
 
 /**
- * Last-viewed browser page on the desk iMac screen.
- * Uses the same aspect ratio as SCREEN_PIXELS so the preview fills the bezel.
+ * Mini browser on the desk iMac — same chrome + tabs as the fullscreen browser,
+ * scaled into the bezel so zoom-out still shows the full tab strip.
  */
-export function MonitorPreview({
-  tabId,
-  className = '',
-  scaleDesktop = true,
-}: MonitorPreviewProps) {
+export function MonitorPreview({ tabId, className = '' }: MonitorPreviewProps) {
   const tab = resolveTab(tabId)
   const rootRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
 
   useLayoutEffect(() => {
-    if (!scaleDesktop || !tab.url) return
     const root = rootRef.current
     const stage = stageRef.current
     if (!root || !stage) return
@@ -48,7 +42,6 @@ export function MonitorPreview({
       const w = root.clientWidth
       const h = root.clientHeight
       if (w <= 0 || h <= 0) return
-      // Aspects match the monitor, so this fills the screen edge-to-edge.
       const s = Math.min(w / DESKTOP_W, h / DESKTOP_H)
       const ox = (w - DESKTOP_W * s) / 2
       const oy = (h - DESKTOP_H * s) / 2
@@ -59,37 +52,50 @@ export function MonitorPreview({
     const ro = new ResizeObserver(fit)
     ro.observe(root)
     return () => ro.disconnect()
-  }, [scaleDesktop, tab.url, tabId])
+  }, [tab.url, tabId])
 
   return (
     <div ref={rootRef} className={`monitor-preview ${className}`.trim()}>
-      {tab.url ? (
-        scaleDesktop ? (
-          <div ref={stageRef} className="monitor-preview__scale">
-            <iframe
-              title={`${tab.label} preview`}
-              src={tab.url}
-              className="monitor-preview__frame"
-              style={{ width: DESKTOP_W, height: DESKTOP_H }}
-              tabIndex={-1}
-              loading="lazy"
-            />
+      <div ref={stageRef} className="monitor-preview__scale">
+        <div
+          className="browser-window monitor-preview__window"
+          style={{ width: DESKTOP_W, height: DESKTOP_H }}
+          aria-hidden
+        >
+          <div className="browser-titlebar">
+            <div className="tab-strip" role="presentation">
+              {BROWSER_TABS.map((t) => (
+                <span
+                  key={t.id}
+                  className={`tab ${t.id === tab.id ? 'is-active' : ''}`}
+                >
+                  <span className="tab-main">{t.label}</span>
+                </span>
+              ))}
+            </div>
+            <span className="browser-close monitor-preview__close-decoy" aria-hidden>
+              <span />
+            </span>
           </div>
-        ) : (
-          <iframe
-            title={`${tab.label} preview`}
-            src={tab.url}
-            className="monitor-preview__frame monitor-preview__frame--fill"
-            tabIndex={-1}
-            loading="lazy"
-          />
-        )
-      ) : (
-        <div className="monitor-preview__placeholder">
-          <p className="monitor-preview__kicker">{tab.label}</p>
-          <p>{tab.placeholder ?? 'Empty tab'}</p>
+
+          <div className="browser-content">
+            {tab.url ? (
+              <iframe
+                title={`${tab.label} preview`}
+                src={tab.url}
+                className="app-frame"
+                tabIndex={-1}
+                loading="lazy"
+              />
+            ) : (
+              <div className="tab-placeholder">
+                <p className="placeholder-kicker">{tab.label}</p>
+                <p>{tab.placeholder ?? 'Empty tab'}</p>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

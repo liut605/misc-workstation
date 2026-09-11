@@ -4,8 +4,10 @@
 
 .desktop-browser-wrap {
   position: fixed;
-  inset: 0;
   z-index: 50;
-  opacity: 0;
+  overflow: hidden;
+  /* top/left/width/height driven by GSAP FLIP between screen and viewport */
   pointer-events: auto;
+  will-change: top, left, width, height;
+  background: #fff;
 }

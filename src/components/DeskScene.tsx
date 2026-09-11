@@ -749,9 +749,11 @@ export function DeskScene({
             }}
           />
 
-          {/* Live last-tab content on the iMac — hidden while fully in desktop mode. */}
+          {/* Tabbed browser preview on the iMac — hidden while the live browser covers it. */}
           <div
-            className={`screen-surface ${mode === 'desktop' ? 'is-hidden' : ''}`}
+            className={`screen-surface ${
+              mode === 'desktop' || mode === 'zooming' ? 'is-hidden' : ''
+            }`}
             style={{
               left: `${SCREEN_RECT.left * 100}%`,
               top: `${SCREEN_RECT.top * 100}%`,

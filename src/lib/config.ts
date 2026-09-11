@@ -19,14 +19,16 @@ export const COMPUTER_RECT = {
   height: 0.455,
 } as const
 
-/** Monitor click → fullscreen browser camera move. */
+/** Monitor click → fullscreen browser camera + chrome morph. */
 export const SCREEN_ZOOM = {
-  dollyDurationIn: 1.15,
-  dollyDurationOut: 1.0,
-  /** Crossfade between zoomed computer and the live browser. */
-  crossfade: 0.45,
+  /** Desk dolly + browser FLIP share this duration (enter). */
+  dollyDurationIn: 1.35,
+  /** Desk dolly + browser FLIP share this duration (exit). */
+  dollyDurationOut: 1.2,
+  /** Soften the desk under the expanding browser near the end of enter. */
+  deskDim: 0.28,
   /** Push slightly past a perfect cover-fit so the move reads as a real lean-in. */
-  overscale: 1.12,
+  overscale: 1.08,
 } as const
 
 /**
