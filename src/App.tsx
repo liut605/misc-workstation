@@ -33,29 +33,23 @@ function fullscreenRect(): ScreenRect {
   }
 }
 
-/** Where the iMac screen sits when the desk scene is at identity (no dolly). */
-function identityScreenRect(scene: HTMLElement): ScreenRect {
-  const w = scene.offsetWidth
-  const h = scene.offsetHeight
-  // Scene is absolutely positioned; ignore GSAP x/y/scale for the layout box.
-  const parent = scene.parentElement
-  if (!parent) {
-    return {
-      left: SCREEN_RECT.left * w,
-      top: SCREEN_RECT.top * h,
-      width: SCREEN_RECT.width * w,
-      height: SCREEN_RECT.height * h,
-    }
-  }
-  const pr = parent.getBoundingClientRect()
-  // Cover-fit scene box matches offsetLeft/Top relative to the stage.
-  const left = pr.left + scene.offsetLeft + SCREEN_RECT.left * w
-  const top = pr.top + scene.offsetTop + SCREEN_RECT.top * h
+/** Live iMac screen bounds (includes current dolly transform on the scene). */
+function liveScreenRect(scene: HTMLElement): ScreenRect {
+  const sr = scene.getBoundingClientRect()
   return {
-    left,
-    top,
-    width: SCREEN_RECT.width * w,
-    height: SCREEN_RECT.height * h,
+    left: sr.left + SCREEN_RECT.left * sr.width,
+    top: sr.top + SCREEN_RECT.top * sr.height,
+    width: SCREEN_RECT.width * sr.width,
+    height: SCREEN_RECT.height * sr.height,
+  }
+}
+
+function lerpRect(a: ScreenRect, b: ScreenRect, t: number): ScreenRect {
+  return {
+    left: a.left + (b.left - a.left) * t,
+    top: a.top + (b.top - a.top) * t,
+    width: a.width + (b.width - a.width) * t,
+    height: a.height + (b.height - a.height) * t,
   }
 }
 
@@ -94,6 +88,15 @@ function applyWrapRect(el: HTMLElement, r: ScreenRect) {
     height: r.height,
     opacity: 1,
   })
+}
+
+/**
+ * Morph progress 0 = glued to the live screen bezel, 1 = fullscreen.
+ * Recomputed every frame so chrome tracks the dollying monitor, then
+ * expands (or collapses) into the final browser layout.
+ */
+function applyMorphWrap(wrap: HTMLElement, scene: HTMLElement, progress: number) {
+  applyWrapRect(wrap, lerpRect(liveScreenRect(scene), fullscreenRect(), progress))
 }
 
 export default function App() {
@@ -161,15 +164,14 @@ export default function App() {
     if (!scene || !wrap) return
 
     if (zoomDirection.current === 'in') {
-      const start = fromRect ?? identityScreenRect(scene)
-      const end = fullscreenRect()
       gsap.set(scene, { x: 0, y: 0, scale: 1, opacity: 1 })
       const pose = computerDollyPose(scene)
       dollyRef.current = pose
       gsap.set(scene, { transformOrigin: pose.transformOrigin })
-      applyWrapRect(wrap, start)
+      applyMorphWrap(wrap, scene, 0)
       gsap.set(wrap, { pointerEvents: 'none' })
 
+      const morph = { p: 0 }
       const dur = SCREEN_ZOOM.dollyDurationIn
       const tl = gsap.timeline({
         onComplete: () => {
@@ -180,8 +182,6 @@ export default function App() {
         },
       })
 
-      // Desk leans into the iMac while the live browser expands from the
-      // screen bezel to fullscreen — tabs/chrome relocate with the wrap.
       tl.to(
         scene,
         {
@@ -194,14 +194,12 @@ export default function App() {
         0,
       )
       tl.to(
-        wrap,
+        morph,
         {
-          top: end.top,
-          left: end.left,
-          width: end.width,
-          height: end.height,
+          p: 1,
           duration: dur,
           ease: 'power2.inOut',
+          onUpdate: () => applyMorphWrap(wrap, scene, morph.p),
         },
         0,
       )
@@ -220,7 +218,7 @@ export default function App() {
       }
     }
 
-    // Exit: shrink browser back onto the screen while the desk pulls out.
+    // Exit: collapse browser onto the live screen while the desk pulls out.
     const pose = dollyRef.current
     gsap.set(scene, {
       transformOrigin: pose.transformOrigin,
@@ -229,10 +227,10 @@ export default function App() {
       scale: pose.scale,
       opacity: SCREEN_ZOOM.deskDim,
     })
-    applyWrapRect(wrap, fullscreenRect())
+    applyMorphWrap(wrap, scene, 1)
     gsap.set(wrap, { pointerEvents: 'none' })
 
-    const target = fromRect ?? identityScreenRect(scene)
+    const morph = { p: 1 }
     const dur = SCREEN_ZOOM.dollyDurationOut
 
     const tl = gsap.timeline({
@@ -254,18 +252,6 @@ export default function App() {
       0,
     )
     tl.to(
-      wrap,
-      {
-        top: target.top,
-        left: target.left,
-        width: target.width,
-        height: target.height,
-        duration: dur,
-        ease: 'power2.inOut',
-      },
-      0,
-    )
-    tl.to(
       scene,
       {
         x: 0,
@@ -273,6 +259,16 @@ export default function App() {
         scale: 1,
         duration: dur,
         ease: 'power2.inOut',
+      },
+      0,
+    )
+    tl.to(
+      morph,
+      {
+        p: 0,
+        duration: dur,
+        ease: 'power2.inOut',
+        onUpdate: () => applyMorphWrap(wrap, scene, morph.p),
       },
       0,
     )
