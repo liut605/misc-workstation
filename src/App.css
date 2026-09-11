@@ -2,23 +2,10 @@
   min-height: 100dvh;
 }
 
-.transition-veil {
-  display: none;
+.desktop-browser-wrap {
   position: fixed;
-  z-index: 80;
-  pointer-events: none;
-  box-shadow: var(--shadow);
-}
-
-.screen-morph {
-  position: fixed;
-  z-index: 55;
-  overflow: hidden;
-  pointer-events: none;
-  background: #1c1916;
-}
-
-.screen-morph__preview {
-  position: absolute;
   inset: 0;
+  z-index: 50;
+  opacity: 0;
+  pointer-events: auto;
 }

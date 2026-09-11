@@ -8,12 +8,25 @@ export const SCREEN_RECT = {
 
 export const SCREEN_PIXELS = { width: 772, height: 435 } as const
 
-/** Monitor click morph ↔ fullscreen browser. */
+/**
+ * Whole iMac (bezel + chin), image-normalized — camera dolly target so
+ * enter/exit feel like pushing into the computer, not enlarging the screen alone.
+ */
+export const COMPUTER_RECT = {
+  left: 0.342,
+  top: 0.348,
+  width: 0.33,
+  height: 0.455,
+} as const
+
+/** Monitor click → fullscreen browser camera move. */
 export const SCREEN_ZOOM = {
-  morphDurationIn: 1.05,
-  morphDurationOut: 0.9,
-  /** Crossfade at desk↔morph and morph↔browser handoffs. */
-  crossfade: 0.4,
+  dollyDurationIn: 1.15,
+  dollyDurationOut: 1.0,
+  /** Crossfade between zoomed computer and the live browser. */
+  crossfade: 0.45,
+  /** Push slightly past a perfect cover-fit so the move reads as a real lean-in. */
+  overscale: 1.12,
 } as const
 
 /**

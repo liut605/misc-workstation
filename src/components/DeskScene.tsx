@@ -283,6 +283,17 @@ export function DeskScene({
     reverseCancelRef.current = null
 
     const hasVideo = Boolean(video && NOTEBOOK.zoomVideo)
+    // Monitor enter/exit dollies the desk scene from App — don't fight that transform.
+    if (mode === 'zooming' || mode === 'desktop') return
+    if (prev === 'zooming' || prev === 'desktop') {
+      // App owns the computer dolly; only clean up sketchbook media here.
+      if (video) gsap.set(video, { autoAlpha: 0 })
+      gsap.set(overhead, { autoAlpha: 0, scale: 1.02 })
+      setPagesActive(false)
+      setVideoPlaying(false)
+      return
+    }
+
     const origin = `${NOTEBOOK.centerX * 100}% ${NOTEBOOK.centerY * 100}%`
     gsap.set(scene, { transformOrigin: origin, force3D: true })
 

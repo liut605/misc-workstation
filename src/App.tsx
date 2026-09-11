@@ -3,26 +3,68 @@ import gsap from 'gsap'
 import { DeskScene, type DeskMode } from './components/DeskScene'
 import { DesktopBrowser } from './components/DesktopBrowser'
 import { HomeView } from './components/HomeView'
-import { MonitorPreview } from './components/MonitorPreview'
-import { BROWSER_TABS, SCREEN_ZOOM } from './lib/config'
+import { BROWSER_TABS, COMPUTER_RECT, SCREEN_ZOOM } from './lib/config'
 import './App.css'
 
 type Mode = 'home' | 'desk' | 'desktop'
 
 type ScreenRect = { top: number; left: number; width: number; height: number }
 
+type DollyPose = {
+  x: number
+  y: number
+  scale: number
+  transformOrigin: string
+}
+
+const IDENTITY: DollyPose = {
+  x: 0,
+  y: 0,
+  scale: 1,
+  transformOrigin: '50% 50%',
+}
+
+/** Camera pose that pushes the whole iMac to fill the viewport. */
+function computerDollyPose(scene: HTMLElement): DollyPose {
+  const sr = scene.getBoundingClientRect()
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+  const rect = {
+    left: sr.left + COMPUTER_RECT.left * sr.width,
+    top: sr.top + COMPUTER_RECT.top * sr.height,
+    width: COMPUTER_RECT.width * sr.width,
+    height: COMPUTER_RECT.height * sr.height,
+  }
+  const cx = rect.left + rect.width / 2
+  const cy = rect.top + rect.height / 2
+  const ox = ((cx - sr.left) / sr.width) * 100
+  const oy = ((cy - sr.top) / sr.height) * 100
+  const scale =
+    Math.max(vw / Math.max(rect.width, 1), vh / Math.max(rect.height, 1)) *
+    SCREEN_ZOOM.overscale
+
+  return {
+    transformOrigin: `${ox}% ${oy}%`,
+    x: vw / 2 - cx,
+    y: vh / 2 - cy,
+    scale,
+  }
+}
+
 export default function App() {
   const [mode, setMode] = useState<Mode>('home')
   const [deskMode, setDeskMode] = useState<DeskMode>('room')
   const [fromRect, setFromRect] = useState<ScreenRect | null>(null)
-  /** Keeps the browser mounted through enter/exit morph crossfades. */
+  /** Keeps the browser mounted through enter/exit crossfades. */
   const [browserOpen, setBrowserOpen] = useState(false)
   /** Survives close so the desk monitor + next enter restore the same page. */
   const [activeTabId, setActiveTabId] = useState(BROWSER_TABS[0].id)
   const zoomDirection = useRef<'in' | 'out'>('in')
+  const dollyRef = useRef<DollyPose>(IDENTITY)
+  const pendingFadeIn = useRef(false)
 
   const sceneRef = useRef<HTMLDivElement>(null)
-  const morphRef = useRef<HTMLDivElement>(null)
+  const browserWrapRef = useRef<HTMLDivElement>(null)
 
   const enterDesk = useCallback(() => {
     setMode('desk')
@@ -33,6 +75,9 @@ export default function App() {
     setBrowserOpen(false)
     setMode('home')
     setDeskMode('room')
+    const scene = sceneRef.current
+    if (scene) gsap.set(scene, { x: 0, y: 0, scale: 1, transformOrigin: '50% 50%' })
+    dollyRef.current = IDENTITY
   }, [])
 
   const openDesktop = useCallback((rect: ScreenRect) => {
@@ -55,102 +100,94 @@ export default function App() {
     setDeskMode('room')
   }, [])
 
+  // After browser mounts for enter, crossfade it in over the zoomed computer.
   useLayoutEffect(() => {
-    if (deskMode !== 'zooming' || mode !== 'desk' || !fromRect) return
-    const morph = morphRef.current
-    if (!morph) return
+    if (!browserOpen || !pendingFadeIn.current) return
+    const wrap = browserWrapRef.current
+    if (!wrap) return
+    pendingFadeIn.current = false
+    gsap.fromTo(
+      wrap,
+      { opacity: 0 },
+      { opacity: 1, duration: SCREEN_ZOOM.crossfade, ease: 'power2.inOut' },
+    )
+  }, [browserOpen])
 
-    const vw = window.innerWidth
-    const vh = window.innerHeight
+  useLayoutEffect(() => {
+    if (deskMode !== 'zooming' || mode !== 'desk') return
+    const scene = sceneRef.current
+    if (!scene) return
+
     const fade = SCREEN_ZOOM.crossfade
 
     if (zoomDirection.current === 'in') {
-      // Desk → morph (fade in) → expand → mount browser under morph → fade morph out.
-      // Stay on deskMode === 'zooming' until the whole sequence finishes so this
-      // effect's cleanup does not kill the timeline mid-crossfade.
-      gsap.set(morph, {
-        display: 'block',
-        left: fromRect.left,
-        top: fromRect.top,
-        width: fromRect.width,
-        height: fromRect.height,
-        opacity: 0,
-        borderRadius: 2,
-      })
+      // Dolly the whole desk photo into the iMac, then crossfade to the browser.
+      gsap.set(scene, { x: 0, y: 0, scale: 1 })
+      const pose = computerDollyPose(scene)
+      dollyRef.current = pose
+      gsap.set(scene, { transformOrigin: pose.transformOrigin })
+
       const tl = gsap.timeline({
         onComplete: () => {
-          gsap.set(morph, { display: 'none', opacity: 0 })
           setMode('desktop')
           setDeskMode('desktop')
         },
       })
-      tl.to(morph, {
-        opacity: 1,
-        duration: fade,
-        ease: 'power2.inOut',
-      })
-      tl.to(morph, {
-        left: 0,
-        top: 0,
-        width: vw,
-        height: vh,
-        borderRadius: 0,
-        duration: SCREEN_ZOOM.morphDurationIn,
+      tl.to(scene, {
+        x: pose.x,
+        y: pose.y,
+        scale: pose.scale,
+        duration: SCREEN_ZOOM.dollyDurationIn,
         ease: 'power3.inOut',
       })
       tl.add(() => {
+        pendingFadeIn.current = true
         setBrowserOpen(true)
       })
-      tl.to(morph, {
-        opacity: 0,
-        duration: fade,
-        ease: 'power2.inOut',
-        delay: 0.05,
-      })
+      // Hold for the crossfade kicked off by the browserOpen effect above.
+      tl.to({}, { duration: fade })
+
       return () => {
         tl.kill()
       }
     }
 
-    // Browser → morph (fade in over browser) → unmount browser → shrink → fade to desk.
-    // Morph shows the same last tab the desk monitor will keep displaying.
-    gsap.set(morph, {
-      display: 'block',
-      left: 0,
-      top: 0,
-      width: vw,
-      height: vh,
-      opacity: 0,
-      borderRadius: 0,
+    // Exit: fade browser out over the already-zoomed computer, then pull back to the desk.
+    const pose = dollyRef.current
+    gsap.set(scene, {
+      transformOrigin: pose.transformOrigin,
+      x: pose.x,
+      y: pose.y,
+      scale: pose.scale,
     })
+
     const tl = gsap.timeline({
       onComplete: () => {
         setDeskMode('room')
-        gsap.set(morph, { display: 'none', opacity: 0 })
+        dollyRef.current = IDENTITY
       },
     })
-    tl.to(morph, {
-      opacity: 1,
-      duration: fade,
-      ease: 'power2.inOut',
-    })
+
+    const wrap = browserWrapRef.current
+    if (wrap) {
+      gsap.set(wrap, { opacity: 1 })
+      tl.to(wrap, {
+        opacity: 0,
+        duration: fade,
+        ease: 'power2.inOut',
+      })
+    }
     tl.add(() => {
       setBrowserOpen(false)
     })
-    tl.to(morph, {
-      left: fromRect.left,
-      top: fromRect.top,
-      width: fromRect.width,
-      height: fromRect.height,
-      borderRadius: 2,
-      duration: SCREEN_ZOOM.morphDurationOut,
+    tl.to(scene, {
+      x: 0,
+      y: 0,
+      scale: 1,
+      duration: SCREEN_ZOOM.dollyDurationOut,
       ease: 'power3.inOut',
     })
-    tl.to(morph, {
-      opacity: 0,
-      duration: fade,
-      ease: 'power2.inOut',
-    })
+
     return () => {
       tl.kill()
     }
@@ -175,17 +212,15 @@ export default function App() {
         />
       )}
 
-      <div ref={morphRef} className="screen-morph" aria-hidden>
-        <MonitorPreview tabId={activeTabId} className="screen-morph__preview" />
-      </div>
-
       {browserOpen && (
-        <DesktopBrowser
-          active
-          activeTabId={activeTabId}
-          onActiveTabChange={setActiveTabId}
-          onExit={closeDesktop}
-        />
+        <div ref={browserWrapRef} className="desktop-browser-wrap">
+          <DesktopBrowser
+            active
+            activeTabId={activeTabId}
+            onActiveTabChange={setActiveTabId}
+            onExit={closeDesktop}
+          />
+        </div>
       )}
     </div>
   )
