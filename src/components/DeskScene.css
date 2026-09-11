@@ -51,7 +51,7 @@
   z-index: 2;
   overflow: hidden;
   pointer-events: none;
-  background: #1c1916;
+  background: #e8e8ec;
 }
 
 .screen-surface.is-hidden {

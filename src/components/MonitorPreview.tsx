@@ -42,7 +42,9 @@ export function MonitorPreview({ tabId, className = '' }: MonitorPreviewProps) {
       const w = root.clientWidth
       const h = root.clientHeight
       if (w <= 0 || h <= 0) return
-      const s = Math.min(w / DESKTOP_W, h / DESKTOP_H)
+      // Cover + tiny overscale: contain-fit leaves 1–2px hairlines from
+      // aspect rounding / subpixels (especially top & right).
+      const s = Math.max(w / DESKTOP_W, h / DESKTOP_H) * 1.004
       const ox = (w - DESKTOP_W * s) / 2
       const oy = (h - DESKTOP_H * s) / 2
       stage.style.transform = `translate(${ox}px, ${oy}px) scale(${s})`

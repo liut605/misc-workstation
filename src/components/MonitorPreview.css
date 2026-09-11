@@ -2,7 +2,8 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: #111;
+  /* Match browser chrome so any subpixel edge never reads as a dark gap. */
+  background: #e8e8ec;
   pointer-events: none;
 }
 
