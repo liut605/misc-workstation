@@ -7,9 +7,13 @@ import {
 import './DesktopBrowser.css'
 import './MonitorPreview.css'
 
-/** Logical canvas for the desk preview — smaller than fullscreen so chrome stays readable when scaled into the bezel. */
+/**
+ * Same aspect as the lit iMac panel / fullscreen browser so titlebar + tabs
+ * take the same fraction of the screen when scaled into the bezel.
+ */
 const SCREEN_ASPECT = SCREEN_PIXELS.width / SCREEN_PIXELS.height
-const DESKTOP_W = 960
+/** Typical desktop width — matches fullscreen chrome proportions (44px bar, 12px type). */
+const DESKTOP_W = 1440
 const DESKTOP_H = Math.round(DESKTOP_W / SCREEN_ASPECT)
 
 type MonitorPreviewProps = {
@@ -22,8 +26,8 @@ function resolveTab(tabId: string): AppTab {
 }
 
 /**
- * Mini browser on the desk iMac — same chrome + tabs as the fullscreen browser,
- * scaled into the bezel so zoom-out still shows the full tab strip.
+ * Mini browser on the desk iMac — identical chrome proportions to the
+ * fullscreen browser, fitted exactly inside the lit LCD.
  */
 export function MonitorPreview({ tabId, className = '' }: MonitorPreviewProps) {
   const tab = resolveTab(tabId)
@@ -42,7 +46,7 @@ export function MonitorPreview({ tabId, className = '' }: MonitorPreviewProps) {
       const w = root.clientWidth
       const h = root.clientHeight
       if (w <= 0 || h <= 0) return
-      // Exact fit to the lit panel — don’t overscale onto the photo’s LCD lip.
+      // Exact fit to the lit panel — no overscale onto the photo’s LCD lip.
       const s = Math.min(w / DESKTOP_W, h / DESKTOP_H)
       const ox = (w - DESKTOP_W * s) / 2
       const oy = (h - DESKTOP_H * s) / 2
