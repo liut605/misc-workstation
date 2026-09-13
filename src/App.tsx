@@ -3,7 +3,7 @@ import gsap from 'gsap'
 import { DeskScene, type DeskMode } from './components/DeskScene'
 import { DesktopBrowser } from './components/DesktopBrowser'
 import { HomeView } from './components/HomeView'
-import { BROWSER_TABS, COMPUTER_RECT, SCREEN_RECT, SCREEN_ZOOM } from './lib/config'
+import { BROWSER_TABS, COMPUTER_RECT, SCREEN_FRAME_RECT, SCREEN_RECT, SCREEN_ZOOM } from './lib/config'
 import './App.css'
 
 type Mode = 'home' | 'desk' | 'desktop'
@@ -43,13 +43,13 @@ function liveScreenRect(scene: HTMLElement): ScreenRect {
   }
 }
 
-function liveComputerRect(scene: HTMLElement): ScreenRect {
+function liveScreenFrameRect(scene: HTMLElement): ScreenRect {
   const sr = scene.getBoundingClientRect()
   return {
-    left: sr.left + COMPUTER_RECT.left * sr.width,
-    top: sr.top + COMPUTER_RECT.top * sr.height,
-    width: COMPUTER_RECT.width * sr.width,
-    height: COMPUTER_RECT.height * sr.height,
+    left: sr.left + SCREEN_FRAME_RECT.left * sr.width,
+    top: sr.top + SCREEN_FRAME_RECT.top * sr.height,
+    width: SCREEN_FRAME_RECT.width * sr.width,
+    height: SCREEN_FRAME_RECT.height * sr.height,
   }
 }
 
@@ -98,7 +98,7 @@ function computerDollyPose(scene: HTMLElement): DollyPose {
 }
 
 /**
- * Morph the browser from the live iMac (black bezel + scaled chrome/page)
+ * Morph the browser from the live LCD (thin black bezel + scaled chrome/page)
  * into fullscreen. Scale (not reflow) so tab labels, the close icon, and
  * in-page type like “NYC is home” / “Skip” grow with the zoom.
  */
@@ -109,26 +109,21 @@ function applyMorphWrap(
   progress: number,
 ) {
   const screen = liveScreenRect(scene)
-  const computer = liveComputerRect(scene)
+  // Black frame = LCD lip only (from screen+bezel reference), not the silver chassis.
+  const frame = liveScreenFrameRect(scene)
   const full = fullscreenRect()
   const keep = bezelStrength(progress)
-  const outer = lerpRect(computer, full, progress)
+  const outer = lerpRect(frame, full, progress)
 
   const basePad = {
-    top: Math.max(0, screen.top - computer.top),
-    left: Math.max(0, screen.left - computer.left),
-    right: Math.max(
-      0,
-      computer.left + computer.width - (screen.left + screen.width),
-    ),
-    bottom: Math.max(
-      0,
-      computer.top + computer.height - (screen.top + screen.height),
-    ),
+    top: Math.max(0, screen.top - frame.top),
+    left: Math.max(0, screen.left - frame.left),
+    right: Math.max(0, frame.left + frame.width - (screen.left + screen.width)),
+    bottom: Math.max(0, frame.top + frame.height - (screen.top + screen.height)),
   }
 
-  const growX = outer.width / Math.max(computer.width, 1)
-  const growY = outer.height / Math.max(computer.height, 1)
+  const growX = outer.width / Math.max(frame.width, 1)
+  const growY = outer.height / Math.max(frame.height, 1)
   const padT = basePad.top * growY * keep
   const padL = basePad.left * growX * keep
   const padR = basePad.right * growX * keep
@@ -149,7 +144,7 @@ function applyMorphWrap(
     paddingBottom: padB,
     paddingLeft: padL,
     backgroundColor: keep > 0.02 ? '#050505' : '#ffffff',
-    borderRadius: keep * 6,
+    borderRadius: keep * 4,
     boxSizing: 'border-box',
     opacity: 1,
   })

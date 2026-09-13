@@ -9,6 +9,25 @@ export const SCREEN_RECT = {
 export const SCREEN_PIXELS = { width: 1544, height: 870 } as const
 
 /**
+ * Black LCD bezel around the lit panel — pads as a fraction of SCREEN_RECT
+ * size, measured from the monitor screen+bezel reference crop.
+ */
+export const SCREEN_BEZEL = {
+  left: 0.022,
+  right: 0.022,
+  top: 0.043,
+  bottom: 0.043,
+} as const
+
+/** Lit screen + black LCD lip only (not the silver iMac chassis). */
+export const SCREEN_FRAME_RECT = {
+  left: SCREEN_RECT.left - SCREEN_RECT.width * SCREEN_BEZEL.left,
+  top: SCREEN_RECT.top - SCREEN_RECT.height * SCREEN_BEZEL.top,
+  width: SCREEN_RECT.width * (1 + SCREEN_BEZEL.left + SCREEN_BEZEL.right),
+  height: SCREEN_RECT.height * (1 + SCREEN_BEZEL.top + SCREEN_BEZEL.bottom),
+} as const
+
+/**
  * Whole iMac (bezel + chin), image-normalized — camera dolly target so
  * enter/exit feel like pushing into the computer, not enlarging the screen alone.
  */
