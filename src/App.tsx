@@ -189,9 +189,12 @@ export default function App() {
   const [deskMode, setDeskMode] = useState<DeskMode>('room')
   const [fromRect, setFromRect] = useState<ScreenRect | null>(null)
   const [browserOpen, setBrowserOpen] = useState(false)
+  /** Live browser tab document is ready — don’t reveal over the desk preview until then. */
+  const [browserReady, setBrowserReady] = useState(false)
   const [activeTabId, setActiveTabId] = useState(BROWSER_TABS[0].id)
   const zoomDirection = useRef<'in' | 'out'>('in')
   const dollyRef = useRef<DollyPose>(IDENTITY)
+  const awaitingReady = useRef(false)
 
   const sceneRef = useRef<HTMLDivElement>(null)
   const browserWrapRef = useRef<HTMLDivElement>(null)
@@ -204,6 +207,8 @@ export default function App() {
 
   const backHome = useCallback(() => {
     setBrowserOpen(false)
+    setBrowserReady(false)
+    awaitingReady.current = false
     setFromRect(null)
     setMode('home')
     setDeskMode('room')
@@ -222,9 +227,17 @@ export default function App() {
 
   const openDesktop = useCallback((rect: ScreenRect) => {
     zoomDirection.current = 'in'
+    awaitingReady.current = true
+    setBrowserReady(false)
     setFromRect(rect)
     setBrowserOpen(true)
     setDeskMode('zooming')
+  }, [])
+
+  const onBrowserContentReady = useCallback(() => {
+    if (!awaitingReady.current) return
+    awaitingReady.current = false
+    setBrowserReady(true)
   }, [])
 
   const closeDesktop = useCallback(() => {
@@ -241,6 +254,20 @@ export default function App() {
     setDeskMode('room')
   }, [])
 
+  // Park the morph wrap on the LCD as soon as it mounts (still invisible).
+  useLayoutEffect(() => {
+    if (!browserOpen) return
+    const scene = sceneRef.current
+    const wrap = browserWrapRef.current
+    const stage = browserStageRef.current
+    if (!scene || !wrap || !stage) return
+    if (zoomDirection.current === 'in' && deskMode === 'zooming' && !browserReady) {
+      gsap.set(scene, { x: 0, y: 0, scale: 1, opacity: 1 })
+      applyMorphWrap(wrap, stage, scene, 0)
+      gsap.set(wrap, { opacity: 0, pointerEvents: 'none', visibility: 'visible' })
+    }
+  }, [browserOpen, deskMode, browserReady, fromRect])
+
   useLayoutEffect(() => {
     if (deskMode !== 'zooming' || !browserOpen) return
     const scene = sceneRef.current
@@ -249,14 +276,16 @@ export default function App() {
     if (!scene || !wrap || !stage) return
 
     if (zoomDirection.current === 'in') {
+      // Stay invisible over the desk preview until the tab document has painted.
+      if (!browserReady) return
+
       gsap.set(scene, { x: 0, y: 0, scale: 1, opacity: 1 })
       const pose = computerDollyPose(scene)
       dollyRef.current = pose
       gsap.set(scene, { transformOrigin: pose.transformOrigin })
-      // Position at the screen first while still invisible, then crossfade over
-      // the desk MonitorPreview so a cold iframe doesn’t flash white.
       applyMorphWrap(wrap, stage, scene, 0)
-      gsap.set(wrap, { opacity: 0, pointerEvents: 'none', visibility: 'visible' })
+      // Hard cut from warm desk preview → warm live browser (no fade-through-white).
+      gsap.set(wrap, { opacity: 1, pointerEvents: 'none', visibility: 'visible' })
 
       const morph = { p: 0 }
       const dur = SCREEN_ZOOM.dollyDurationIn
@@ -269,11 +298,6 @@ export default function App() {
         },
       })
 
-      tl.to(
-        wrap,
-        { opacity: 1, duration: Math.min(0.18, dur * 0.2), ease: 'power1.out' },
-        0,
-      )
       tl.to(
         scene,
         {
@@ -327,6 +351,7 @@ export default function App() {
     const tl = gsap.timeline({
       onComplete: () => {
         setBrowserOpen(false)
+        setBrowserReady(false)
         setDeskMode('room')
         dollyRef.current = IDENTITY
         gsap.set(scene, { x: 0, y: 0, scale: 1, opacity: 1 })
@@ -363,11 +388,13 @@ export default function App() {
       },
       0,
     )
+    // Drop opacity only at the very end so the desk preview is already underneath.
+    tl.to(wrap, { opacity: 0, duration: 0.08, ease: 'power1.in' }, dur - 0.08)
 
     return () => {
       tl.kill()
     }
-  }, [deskMode, browserOpen, fromRect])
+  }, [deskMode, browserOpen, fromRect, browserReady])
 
   const showDesk =
     mode === 'desk' || mode === 'desktop' || browserOpen || deskMode === 'zooming'
@@ -396,6 +423,7 @@ export default function App() {
               activeTabId={activeTabId}
               onActiveTabChange={setActiveTabId}
               onExit={closeDesktop}
+              onContentReady={onBrowserContentReady}
             />
           </div>
         </div>

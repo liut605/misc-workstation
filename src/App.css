@@ -21,7 +21,8 @@
 .desktop-browser-stage {
   position: relative;
   overflow: hidden;
-  background: #fff;
+  /* Transparent until the iframe paints — white here caused the enter blink. */
+  background: transparent;
   transform-origin: 0 0;
   will-change: transform;
 }

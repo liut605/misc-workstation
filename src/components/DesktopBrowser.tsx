@@ -7,6 +7,8 @@ type DesktopBrowserProps = {
   activeTabId: string
   onActiveTabChange: (tabId: string) => void
   onExit: () => void
+  /** Fires once the active tab’s document is ready (or immediately for placeholders). */
+  onContentReady?: () => void
 }
 
 export function DesktopBrowser({
@@ -14,10 +16,26 @@ export function DesktopBrowser({
   activeTabId,
   onActiveTabChange,
   onExit,
+  onContentReady,
 }: DesktopBrowserProps) {
   const shellRef = useRef<HTMLDivElement>(null)
+  const readySent = useRef(false)
   const activeTab =
     BROWSER_TABS.find((t) => t.id === activeTabId) ?? BROWSER_TABS[0]
+
+  const signalReady = () => {
+    if (readySent.current) return
+    readySent.current = true
+    onContentReady?.()
+  }
+
+  useEffect(() => {
+    readySent.current = false
+    if (!activeTab.url) {
+      // Placeholder tabs are ready immediately.
+      signalReady()
+    }
+  }, [activeTab.id, activeTab.url])
 
   useEffect(() => {
     if (!active) return
@@ -27,6 +45,13 @@ export function DesktopBrowser({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [active, onExit])
+
+  // Cross-origin iframes still fire load; failsafe so zoom never hangs.
+  useEffect(() => {
+    if (!activeTab.url) return
+    const t = window.setTimeout(signalReady, 900)
+    return () => window.clearTimeout(t)
+  }, [activeTab.id, activeTab.url])
 
   return (
     <div
@@ -65,6 +90,7 @@ export function DesktopBrowser({
               src={activeTab.url}
               className="app-frame"
               allow="fullscreen"
+              onLoad={signalReady}
             />
           ) : (
             <div className="tab-placeholder">
