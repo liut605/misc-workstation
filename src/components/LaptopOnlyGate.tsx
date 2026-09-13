@@ -22,6 +22,12 @@ export function LaptopOnlyGate({ children }: LaptopOnlyGateProps) {
             This workstation is built for a larger screen. Open it on a laptop or
             desktop — phone and tablet layouts are coming soon.
           </p>
+          <a
+            className="laptop-only-back"
+            href="https://tsingliu.info/"
+          >
+            back to portfolio
+          </a>
         </div>
       </div>
       <div className="laptop-only-desk">{children}</div>
