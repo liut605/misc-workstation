@@ -2,11 +2,11 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { DeskScene, type DeskMode } from './components/DeskScene'
 import { DesktopBrowser } from './components/DesktopBrowser'
-import { HomeView } from './components/HomeView'
+import { LaptopOnlyGate } from './components/LaptopOnlyGate'
 import { BROWSER_TABS, COMPUTER_RECT, SCREEN_FRAME_RECT, SCREEN_RECT, SCREEN_ZOOM } from './lib/config'
 import './App.css'
 
-type Mode = 'home' | 'desk' | 'desktop'
+type Mode = 'desk' | 'desktop'
 
 type ScreenRect = { top: number; left: number; width: number; height: number }
 
@@ -185,7 +185,7 @@ function settleFullscreen(wrap: HTMLElement, stage: HTMLElement) {
 }
 
 export default function App() {
-  const [mode, setMode] = useState<Mode>('home')
+  const [, setMode] = useState<Mode>('desk')
   const [deskMode, setDeskMode] = useState<DeskMode>('room')
   const [fromRect, setFromRect] = useState<ScreenRect | null>(null)
   const [browserOpen, setBrowserOpen] = useState(false)
@@ -199,31 +199,6 @@ export default function App() {
   const sceneRef = useRef<HTMLDivElement>(null)
   const browserWrapRef = useRef<HTMLDivElement>(null)
   const browserStageRef = useRef<HTMLDivElement>(null)
-
-  const enterDesk = useCallback(() => {
-    setMode('desk')
-    setDeskMode('room')
-  }, [])
-
-  const backHome = useCallback(() => {
-    setBrowserOpen(false)
-    setBrowserReady(false)
-    awaitingReady.current = false
-    setFromRect(null)
-    setMode('home')
-    setDeskMode('room')
-    const scene = sceneRef.current
-    if (scene) {
-      gsap.set(scene, {
-        x: 0,
-        y: 0,
-        scale: 1,
-        opacity: 1,
-        transformOrigin: '50% 50%',
-      })
-    }
-    dollyRef.current = IDENTITY
-  }, [])
 
   const openDesktop = useCallback((rect: ScreenRect) => {
     zoomDirection.current = 'in'
@@ -396,38 +371,32 @@ export default function App() {
     }
   }, [deskMode, browserOpen, fromRect, browserReady])
 
-  const showDesk =
-    mode === 'desk' || mode === 'desktop' || browserOpen || deskMode === 'zooming'
-
   return (
-    <div className="app-shell">
-      {mode === 'home' && <HomeView onEnterMisc={enterDesk} />}
-
-      {showDesk && (
+    <LaptopOnlyGate>
+      <div className="app-shell">
         <DeskScene
           mode={deskMode === 'desktop' ? 'desktop' : deskMode}
           monitorTabId={activeTabId}
           onOpenDesktop={openDesktop}
           onOpenSketchbook={openSketchbook}
           onExitSketchbook={exitSketchbook}
-          onBackHome={backHome}
           sceneRef={sceneRef}
         />
-      )}
 
-      {browserOpen && (
-        <div ref={browserWrapRef} className="desktop-browser-wrap">
-          <div ref={browserStageRef} className="desktop-browser-stage">
-            <DesktopBrowser
-              active
-              activeTabId={activeTabId}
-              onActiveTabChange={setActiveTabId}
-              onExit={closeDesktop}
-              onContentReady={onBrowserContentReady}
-            />
+        {browserOpen && (
+          <div ref={browserWrapRef} className="desktop-browser-wrap">
+            <div ref={browserStageRef} className="desktop-browser-stage">
+              <DesktopBrowser
+                active
+                activeTabId={activeTabId}
+                onActiveTabChange={setActiveTabId}
+                onExit={closeDesktop}
+                onContentReady={onBrowserContentReady}
+              />
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </LaptopOnlyGate>
   )
 }

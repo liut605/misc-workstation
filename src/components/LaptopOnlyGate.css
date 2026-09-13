@@ -1,0 +1,60 @@
+.laptop-only {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 24px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(ellipse 90% 70% at 20% 10%, rgba(214, 186, 148, 0.35), transparent 55%),
+    radial-gradient(ellipse 80% 60% at 90% 80%, rgba(120, 98, 78, 0.22), transparent 50%),
+    linear-gradient(165deg, #ebe2d6 0%, #d9cfc0 48%, #c9b8a4 100%);
+  color: #1c1916;
+}
+
+.laptop-only-inner {
+  max-width: 22rem;
+  text-align: center;
+}
+
+.laptop-only-brand {
+  margin: 0 0 18px;
+  font-family: Fraunces, 'Times New Roman', serif;
+  font-size: clamp(2.75rem, 12vw, 3.75rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+}
+
+.laptop-only-title {
+  margin: 0 0 12px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.laptop-only-copy {
+  margin: 0;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: rgba(28, 25, 22, 0.78);
+}
+
+.laptop-only-desk {
+  min-height: 100dvh;
+}
+
+@media (max-width: 1099px) {
+  .laptop-only {
+    display: flex;
+  }
+
+  .laptop-only-desk {
+    display: none;
+    pointer-events: none;
+  }
+}

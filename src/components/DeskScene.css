@@ -210,20 +210,6 @@
   background: #fffaf4;
 }
 
-.desk-back {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  z-index: 5;
-  border: 0;
-  border-radius: 999px;
-  padding: 10px 14px;
-  background: rgba(255, 250, 244, 0.88);
-  color: #1c1916;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(28, 25, 22, 0.12);
-}
-
 .desk-hint {
   position: absolute;
   left: 50%;

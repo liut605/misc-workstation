@@ -21,7 +21,6 @@ type DeskSceneProps = {
   onOpenDesktop: (screenRect: ScreenRect) => void
   onOpenSketchbook: () => void
   onExitSketchbook: () => void
-  onBackHome: () => void
   sceneRef?: React.RefObject<HTMLDivElement | null>
 }
 
@@ -174,7 +173,6 @@ export function DeskScene({
   onOpenDesktop,
   onOpenSketchbook,
   onExitSketchbook,
-  onBackHome,
   sceneRef: externalSceneRef,
 }: DeskSceneProps) {
   const internalSceneRef = useRef<HTMLDivElement>(null)
@@ -695,12 +693,6 @@ export function DeskScene({
     <div
       className={`desk-view ${mode !== 'room' || videoPlaying ? 'is-zoomed' : ''} ${inSketchbook ? 'is-sketchbook' : ''}`}
     >
-      {showChrome && (
-        <button type="button" className="desk-back" onClick={onBackHome}>
-          ← Home
-        </button>
-      )}
-
       {(mode === 'sketchbook' || videoPlaying) && (
         <button
           type="button"
