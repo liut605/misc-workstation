@@ -749,11 +749,10 @@ export function DeskScene({
             }}
           />
 
-          {/* Tabbed browser preview on the iMac — hidden while the live browser covers it. */}
+          {/* Tabbed browser on the iMac — stay visible under the morph while zooming
+              so we don’t flash an empty bezel before the live browser is placed. */}
           <div
-            className={`screen-surface ${
-              mode === 'desktop' || mode === 'zooming' ? 'is-hidden' : ''
-            }`}
+            className={`screen-surface ${mode === 'desktop' ? 'is-hidden' : ''}`}
             style={{
               left: `${SCREEN_RECT.left * 100}%`,
               top: `${SCREEN_RECT.top * 100}%`,

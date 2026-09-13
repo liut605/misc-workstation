@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import gsap from 'gsap'
 import { BROWSER_TABS, type AppTab } from '../lib/config'
 import './DesktopBrowser.css'
 
@@ -21,14 +20,6 @@ export function DesktopBrowser({
     BROWSER_TABS.find((t) => t.id === activeTabId) ?? BROWSER_TABS[0]
 
   useEffect(() => {
-    if (!shellRef.current) return
-    gsap.set(shellRef.current, {
-      opacity: active ? 1 : 0,
-      pointerEvents: active ? 'auto' : 'none',
-    })
-  }, [active])
-
-  useEffect(() => {
     if (!active) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onExit()
@@ -42,6 +33,7 @@ export function DesktopBrowser({
       ref={shellRef}
       className="desktop-shell"
       aria-hidden={!active}
+      style={{ opacity: active ? 1 : 0, pointerEvents: active ? 'auto' : 'none' }}
     >
       <div className="browser-window" role="dialog" aria-label="Browser">
         <div className="browser-titlebar">

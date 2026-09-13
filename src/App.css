@@ -7,10 +7,15 @@
   z-index: 50;
   overflow: hidden;
   box-sizing: border-box;
-  /* Black iMac bezel during morph; padding/size driven by GSAP */
+  /* Sized/placed by GSAP; start invisible until the first morph frame is applied. */
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  opacity: 0;
   background: #050505;
-  pointer-events: auto;
-  will-change: top, left, width, height, padding;
+  pointer-events: none;
+  will-change: top, left, width, height, padding, opacity;
 }
 
 .desktop-browser-stage {

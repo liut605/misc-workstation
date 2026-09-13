@@ -146,7 +146,6 @@ function applyMorphWrap(
     backgroundColor: keep > 0.02 ? '#050505' : '#ffffff',
     borderRadius: keep * 4,
     boxSizing: 'border-box',
-    opacity: 1,
   })
 
   gsap.set(stage, {
@@ -254,20 +253,27 @@ export default function App() {
       const pose = computerDollyPose(scene)
       dollyRef.current = pose
       gsap.set(scene, { transformOrigin: pose.transformOrigin })
+      // Position at the screen first while still invisible, then crossfade over
+      // the desk MonitorPreview so a cold iframe doesn’t flash white.
       applyMorphWrap(wrap, stage, scene, 0)
-      gsap.set(wrap, { pointerEvents: 'none' })
+      gsap.set(wrap, { opacity: 0, pointerEvents: 'none', visibility: 'visible' })
 
       const morph = { p: 0 }
       const dur = SCREEN_ZOOM.dollyDurationIn
       const tl = gsap.timeline({
         onComplete: () => {
           settleFullscreen(wrap, stage)
-          gsap.set(wrap, { pointerEvents: 'auto' })
+          gsap.set(wrap, { pointerEvents: 'auto', opacity: 1 })
           setMode('desktop')
           setDeskMode('desktop')
         },
       })
 
+      tl.to(
+        wrap,
+        { opacity: 1, duration: Math.min(0.18, dur * 0.2), ease: 'power1.out' },
+        0,
+      )
       tl.to(
         scene,
         {
@@ -313,7 +319,7 @@ export default function App() {
       opacity: SCREEN_ZOOM.deskDim,
     })
     applyMorphWrap(wrap, stage, scene, 1)
-    gsap.set(wrap, { pointerEvents: 'none' })
+    gsap.set(wrap, { opacity: 1, pointerEvents: 'none', visibility: 'visible' })
 
     const morph = { p: 1 }
     const dur = SCREEN_ZOOM.dollyDurationOut
