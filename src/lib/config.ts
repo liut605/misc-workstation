@@ -67,13 +67,13 @@ export const OVERHEAD_IMAGE = { width: 1376, height: 768 } as const
  */
 export const NOTEBOOK = {
   /** Generous click AABB around the open book. */
-  left: 0.12,
-  top: 0.62,
-  width: 0.3,
-  height: 0.34,
-  /** Visual center of the open spread (for camera aim). */
-  centerX: 0.265,
-  centerY: 0.86,
+  left: 0.15,
+  top: 0.78,
+  width: 0.28,
+  height: 0.18,
+  /** Visual center of the open spread — aligned to the marked book box. */
+  centerX: 0.279,
+  centerY: 0.889,
   /**
    * Enter/exit uses Flow zoom clip (`zoomVideo`), then hands off to
    * `public/sketchbook-overhead.jpg` for interactive page turns.
