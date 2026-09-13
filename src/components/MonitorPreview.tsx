@@ -7,9 +7,12 @@ import {
 import './DesktopBrowser.css'
 import './MonitorPreview.css'
 
-/** Logical canvas for the desk preview — smaller than fullscreen so chrome stays readable when scaled into the bezel. */
+/**
+ * Same canvas aspect as the live screen / fullscreen browser so chrome
+ * (tabs, titlebar) occupies the same fraction of the panel when scaled in.
+ */
 const SCREEN_ASPECT = SCREEN_PIXELS.width / SCREEN_PIXELS.height
-const DESKTOP_W = 960
+const DESKTOP_W = 1280
 const DESKTOP_H = Math.round(DESKTOP_W / SCREEN_ASPECT)
 
 type MonitorPreviewProps = {
@@ -22,8 +25,9 @@ function resolveTab(tabId: string): AppTab {
 }
 
 /**
- * Mini browser on the desk iMac — same chrome + tabs as the fullscreen browser,
- * scaled into the bezel so zoom-out still shows the full tab strip.
+ * Mini browser on the desk iMac — identical chrome proportions to the
+ * fullscreen browser, fitted exactly inside the LCD (no overscale that
+ * would cover the photo’s real black bezel).
  */
 export function MonitorPreview({ tabId, className = '' }: MonitorPreviewProps) {
   const tab = resolveTab(tabId)
@@ -42,12 +46,10 @@ export function MonitorPreview({ tabId, className = '' }: MonitorPreviewProps) {
       const w = root.clientWidth
       const h = root.clientHeight
       if (w <= 0 || h <= 0) return
-      // Cover + overscale: contain-fit leaves hairline gaps; bias fill past
-      // the bezel so top/right never show the screen backing.
-      const s = Math.max(w / DESKTOP_W, h / DESKTOP_H) * 1.02
-      // Prefer clipping bottom/left slightly so the tab strip stays inside.
-      const ox = (w - DESKTOP_W * s) * 0.35
-      const oy = (h - DESKTOP_H * s) * 0.2
+      // Aspects match SCREEN_RECT — exact fill, no cover/overscale bleed.
+      const s = Math.min(w / DESKTOP_W, h / DESKTOP_H)
+      const ox = (w - DESKTOP_W * s) / 2
+      const oy = (h - DESKTOP_H * s) / 2
       stage.style.transform = `translate(${ox}px, ${oy}px) scale(${s})`
     }
 

@@ -51,7 +51,8 @@
   z-index: 2;
   overflow: hidden;
   pointer-events: none;
-  background: #e8e8ec;
+  /* No fill — avoid covering the photo’s black LCD lip / silver chassis. */
+  background: transparent;
 }
 
 .screen-surface.is-hidden {
