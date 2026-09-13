@@ -44,7 +44,7 @@ export function MonitorPreview({ tabId, className = '' }: MonitorPreviewProps) {
       if (w <= 0 || h <= 0) return
       // Cover + overscale: contain-fit leaves hairline gaps; bias fill past
       // the bezel so top/right never show the screen backing.
-      const s = Math.max(w / DESKTOP_W, h / DESKTOP_H) * 1.012
+      const s = Math.max(w / DESKTOP_W, h / DESKTOP_H) * 1.02
       // Prefer clipping bottom/left slightly so the tab strip stays inside.
       const ox = (w - DESKTOP_W * s) * 0.35
       const oy = (h - DESKTOP_H * s) * 0.2

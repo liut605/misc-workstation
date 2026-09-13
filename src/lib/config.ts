@@ -1,12 +1,12 @@
 /** Percentage of desk-final.jpg occupied by the iMac screen (16:9). */
 export const SCREEN_RECT = {
   left: 0.36664244186046513,
-  top: 0.44140625,
+  top: 0.4410807291666667,
   width: 0.2805232558139535,
   height: 0.283203125,
 } as const
 
-export const SCREEN_PIXELS = { width: 772, height: 435 } as const
+export const SCREEN_PIXELS = { width: 1544, height: 870 } as const
 
 /**
  * Whole iMac (bezel + chin), image-normalized — camera dolly target so
@@ -48,7 +48,7 @@ export const WALL = {
 } as const
 
 /** Native desk photo size */
-export const DESK_IMAGE = { width: 2752, height: 1536 } as const
+export const DESK_IMAGE = { width: 5504, height: 3072 } as const
 
 /** Native sketchbook overhead / mask size */
 export const OVERHEAD_IMAGE = { width: 1376, height: 768 } as const

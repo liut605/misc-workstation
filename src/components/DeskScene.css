@@ -22,8 +22,8 @@
   top: 0;
   left: 50%;
   height: 100dvh;
-  width: calc(100dvh * 2752 / 1536);
-  margin-left: calc(100dvh * 2752 / 1536 / -2);
+  width: calc(100dvh * 5504 / 3072);
+  margin-left: calc(100dvh * 5504 / 3072 / -2);
   will-change: width, height, top, left;
 }
 
