@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { DeskScene, type DeskMode } from './components/DeskScene'
 import { DesktopBrowser } from './components/DesktopBrowser'
@@ -199,6 +199,41 @@ export default function App() {
   const sceneRef = useRef<HTMLDivElement>(null)
   const browserWrapRef = useRef<HTMLDivElement>(null)
   const browserStageRef = useRef<HTMLDivElement>(null)
+
+  // Fade the workstation in after first paint (and after the desk image is ready when possible).
+  useEffect(() => {
+    let cancelled = false
+    const root = document.getElementById('root')
+    if (!root) return
+
+    const reveal = () => {
+      if (cancelled) return
+      // Double rAF so the initial opacity:0 frame is committed before transitioning.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (!cancelled) root.classList.add('is-ready')
+        })
+      })
+    }
+
+    const img = document.querySelector<HTMLImageElement>('.desk-photo, img[src*="desk-final"]')
+    if (img && !img.complete) {
+      const onLoad = () => reveal()
+      img.addEventListener('load', onLoad, { once: true })
+      // Don't hang forever if the image errors.
+      const fallback = window.setTimeout(reveal, 1200)
+      return () => {
+        cancelled = true
+        img.removeEventListener('load', onLoad)
+        window.clearTimeout(fallback)
+      }
+    }
+
+    reveal()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const openDesktop = useCallback((rect: ScreenRect) => {
     zoomDirection.current = 'in'
