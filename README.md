@@ -9,7 +9,6 @@ Interactive desk experience for Tsing Liu’s portfolio **Misc** page. Lands dir
    - **Rooted NYC** → `https://rooted-nyc.tsingliu.info/`
    - **String of Pearls** → `https://string-of-pearls.tsingliu.info/`
    - **Portfolio** → leaves the workstation for `https://tsingliu.info/` (also clickable on the desk monitor tab)
-   - Other tabs → placeholders until URLs are ready
 3. **Sketchbook zoom** — Flow zoom video + overhead page turns.
 4. Wall frames — **Coming soon** hover hint.
 
