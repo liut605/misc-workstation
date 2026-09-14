@@ -19,11 +19,19 @@
   box-shadow: none;
 }
 
-/* Same chrome metrics as DesktopBrowser — only disable interaction. */
+/* Same chrome metrics as DesktopBrowser — only disable interaction,
+   except the Portfolio leave-tab (meta escape back to tsingliu.info). */
 .monitor-preview .tab,
 .monitor-preview__close-decoy {
   pointer-events: none;
   cursor: default;
+}
+
+.monitor-preview .tab--leave {
+  pointer-events: auto;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
 }
 
 .monitor-preview .app-frame {

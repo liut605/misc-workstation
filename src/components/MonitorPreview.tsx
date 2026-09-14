@@ -25,6 +25,19 @@ function resolveTab(tabId: string): AppTab {
   return BROWSER_TABS.find((t) => t.id === tabId) ?? BROWSER_TABS[0]
 }
 
+/** Navigate the top window so Webflow/Misc embeds leave the workstation. */
+function leaveWorkstation(url: string) {
+  try {
+    if (window.top && window.top !== window.self) {
+      window.top.location.assign(url)
+      return
+    }
+  } catch {
+    // Cross-origin parent — fall through.
+  }
+  window.location.assign(url)
+}
+
 /**
  * Mini browser on the desk iMac — identical chrome proportions to the
  * fullscreen browser, fitted exactly inside the lit LCD.
@@ -65,25 +78,41 @@ export function MonitorPreview({ tabId, className = '' }: MonitorPreviewProps) {
         <div
           className="browser-window monitor-preview__window"
           style={{ width: DESKTOP_W, height: DESKTOP_H }}
-          aria-hidden
         >
           <div className="browser-titlebar">
             <div className="tab-strip" role="presentation">
-              {BROWSER_TABS.map((t) => (
-                <span
-                  key={t.id}
-                  className={`tab ${t.id === tab.id ? 'is-active' : ''}`}
-                >
-                  <span className="tab-main">{t.label}</span>
-                </span>
-              ))}
+              {BROWSER_TABS.map((t) =>
+                t.leaveTo ? (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className={`tab tab--leave ${t.id === tab.id ? 'is-active' : ''}`}
+                    title="Back to portfolio · tsingliu.info"
+                    aria-label={`${t.label} — leave workstation for tsingliu.info`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      leaveWorkstation(t.leaveTo!)
+                    }}
+                  >
+                    <span className="tab-main">{t.label}</span>
+                  </button>
+                ) : (
+                  <span
+                    key={t.id}
+                    className={`tab ${t.id === tab.id ? 'is-active' : ''}`}
+                    aria-hidden
+                  >
+                    <span className="tab-main">{t.label}</span>
+                  </span>
+                ),
+              )}
             </div>
             <span className="browser-close monitor-preview__close-decoy" aria-hidden>
               <span />
             </span>
           </div>
 
-          <div className="browser-content">
+          <div className="browser-content" aria-hidden>
             {tab.url ? (
               <iframe
                 title={`${tab.label} preview`}

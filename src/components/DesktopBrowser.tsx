@@ -11,6 +11,19 @@ type DesktopBrowserProps = {
   onContentReady?: () => void
 }
 
+/** Navigate the top window so Webflow/Misc embeds leave the workstation. */
+function leaveWorkstation(url: string) {
+  try {
+    if (window.top && window.top !== window.self) {
+      window.top.location.assign(url)
+      return
+    }
+  } catch {
+    // Cross-origin parent — fall through to _top navigation.
+  }
+  window.location.assign(url)
+}
+
 export function DesktopBrowser({
   active,
   activeTabId,
@@ -53,6 +66,14 @@ export function DesktopBrowser({
     return () => window.clearTimeout(t)
   }, [activeTab.id, activeTab.url])
 
+  const handleTabSelect = (tab: AppTab) => {
+    if (tab.leaveTo) {
+      leaveWorkstation(tab.leaveTo)
+      return
+    }
+    onActiveTabChange(tab.id)
+  }
+
   return (
     <div
       ref={shellRef}
@@ -68,7 +89,7 @@ export function DesktopBrowser({
                 key={tab.id}
                 tab={tab}
                 selected={tab.id === activeTab.id}
-                onSelect={() => onActiveTabChange(tab.id)}
+                onSelect={() => handleTabSelect(tab)}
               />
             ))}
           </div>
@@ -113,12 +134,19 @@ function TabButton({
   selected: boolean
   onSelect: () => void
 }) {
+  const leaves = Boolean(tab.leaveTo)
   return (
     <button
       type="button"
-      className={`tab ${selected ? 'is-active' : ''}`}
+      className={`tab ${selected ? 'is-active' : ''} ${leaves ? 'tab--leave' : ''}`}
       role="tab"
       aria-selected={selected}
+      aria-label={
+        leaves
+          ? `${tab.label} — leave workstation for tsingliu.info`
+          : tab.label
+      }
+      title={leaves ? 'Back to portfolio · tsingliu.info' : undefined}
       onClick={onSelect}
     >
       <span className="tab-main">{tab.label}</span>
