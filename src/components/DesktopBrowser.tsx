@@ -150,17 +150,6 @@ function TabButton({
       onClick={onSelect}
     >
       <span className="tab-main">{tab.label}</span>
-      <span
-        className="tab-close"
-        role="presentation"
-        aria-hidden="true"
-        onClick={(e) => {
-          // Visual Chrome close — Portfolio still leaves via the tab itself.
-          e.preventDefault()
-          e.stopPropagation()
-          if (tab.leaveTo) onSelect()
-        }}
-      />
     </button>
   )
 }
