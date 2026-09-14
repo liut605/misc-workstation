@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { BROWSER_TABS, type AppTab } from '../lib/config'
+import { leaveWorkstation } from '../lib/navigate'
 import './DesktopBrowser.css'
 
 type DesktopBrowserProps = {
@@ -9,19 +10,6 @@ type DesktopBrowserProps = {
   onExit: () => void
   /** Fires once the active tab’s document is ready (or immediately for placeholders). */
   onContentReady?: () => void
-}
-
-/** Navigate the top window so Webflow/Misc embeds leave the workstation. */
-function leaveWorkstation(url: string) {
-  try {
-    if (window.top && window.top !== window.self) {
-      window.top.location.assign(url)
-      return
-    }
-  } catch {
-    // Cross-origin parent — fall through to _top navigation.
-  }
-  window.location.assign(url)
 }
 
 export function DesktopBrowser({

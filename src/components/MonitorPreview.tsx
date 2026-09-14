@@ -4,6 +4,7 @@ import {
   SCREEN_PIXELS,
   type AppTab,
 } from '../lib/config'
+import { leaveWorkstation } from '../lib/navigate'
 import './DesktopBrowser.css'
 import './MonitorPreview.css'
 
@@ -23,19 +24,6 @@ type MonitorPreviewProps = {
 
 function resolveTab(tabId: string): AppTab {
   return BROWSER_TABS.find((t) => t.id === tabId) ?? BROWSER_TABS[0]
-}
-
-/** Navigate the top window so Webflow/Misc embeds leave the workstation. */
-function leaveWorkstation(url: string) {
-  try {
-    if (window.top && window.top !== window.self) {
-      window.top.location.assign(url)
-      return
-    }
-  } catch {
-    // Cross-origin parent — fall through.
-  }
-  window.location.assign(url)
 }
 
 /**

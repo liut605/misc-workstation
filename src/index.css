@@ -29,6 +29,22 @@ body,
   height: 100%;
 }
 
+/* Workstation enter / leave fades (Portfolio tab uses .is-leaving). */
+#root {
+  opacity: 0;
+  transition: opacity 0.75s ease;
+}
+
+#root.is-ready {
+  opacity: 1;
+}
+
+#root.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+  transition-duration: 0.5s;
+}
+
 body {
   background:
     radial-gradient(1200px 700px at 12% 0%, #fff8f0 0%, transparent 55%),
