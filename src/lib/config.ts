@@ -213,12 +213,6 @@ export const BROWSER_TABS: AppTab[] = [
     url: 'https://string-of-pearls.tsingliu.info/',
   },
   {
-    id: 'placeholder-a',
-    label: 'Studio Notes',
-    url: null,
-    placeholder: 'Placeholder tab — URL TBD.',
-  },
-  {
     id: 'portfolio',
     label: 'Portfolio',
     url: null,
