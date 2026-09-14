@@ -95,6 +95,7 @@ export function MonitorPreview({ tabId, className = '' }: MonitorPreviewProps) {
                     }}
                   >
                     <span className="tab-main">{t.label}</span>
+                    <span className="tab-close tab-close-decoy" aria-hidden />
                   </button>
                 ) : (
                   <span
@@ -103,6 +104,7 @@ export function MonitorPreview({ tabId, className = '' }: MonitorPreviewProps) {
                     aria-hidden
                   >
                     <span className="tab-main">{t.label}</span>
+                    <span className="tab-close tab-close-decoy" aria-hidden />
                   </span>
                 ),
               )}
