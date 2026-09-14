@@ -46,9 +46,13 @@
   border-radius: 0;
 }
 
+/* Above the screen hotspot so the Portfolio leave-tab can receive clicks;
+   pointer-events stay none except on `.tab--leave` (see MonitorPreview). */
+/* z-index above the screen hotspot so `.tab--leave` can receive clicks;
+   surface stays pointer-events:none — only the Portfolio tab opts in. */
 .screen-surface {
   position: absolute;
-  z-index: 2;
+  z-index: 4;
   overflow: hidden;
   pointer-events: none;
   /* No fill — avoid covering the photo’s black LCD lip / silver chassis. */

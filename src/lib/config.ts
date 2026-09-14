@@ -192,7 +192,14 @@ export type AppTab = {
   label: string
   url: string | null
   placeholder?: string
+  /**
+   * Leave the Misc workstation entirely (breaks out of a parent iframe).
+   * Used for the meta “back to portfolio” tab on the monitor.
+   */
+  leaveTo?: string
 }
+
+export const PORTFOLIO_URL = 'https://tsingliu.info/'
 
 export const BROWSER_TABS: AppTab[] = [
   {
@@ -212,9 +219,10 @@ export const BROWSER_TABS: AppTab[] = [
     placeholder: 'Placeholder tab — URL TBD.',
   },
   {
-    id: 'placeholder-b',
-    label: 'New Tab',
+    id: 'portfolio',
+    label: 'Portfolio',
     url: null,
-    placeholder: 'Another experiment will land here.',
+    leaveTo: PORTFOLIO_URL,
+    placeholder: 'Return to tsingliu.info',
   },
 ]
