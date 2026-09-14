@@ -75,7 +75,7 @@ export function MonitorPreview({ tabId, className = '' }: MonitorPreviewProps) {
                     key={t.id}
                     type="button"
                     className={`tab tab--leave ${t.id === tab.id ? 'is-active' : ''}`}
-                    title="Back to portfolio · tsingliu.info"
+                    title="Back to Tsing Liu · tsingliu.info"
                     aria-label={`${t.label} — leave workstation for tsingliu.info`}
                     onClick={(e) => {
                       e.stopPropagation()

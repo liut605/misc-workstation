@@ -134,7 +134,7 @@ function TabButton({
           ? `${tab.label} — leave workstation for tsingliu.info`
           : tab.label
       }
-      title={leaves ? 'Back to portfolio · tsingliu.info' : undefined}
+      title={leaves ? 'Back to Tsing Liu · tsingliu.info' : undefined}
       onClick={onSelect}
     >
       <span className="tab-main">{tab.label}</span>

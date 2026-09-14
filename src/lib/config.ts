@@ -214,7 +214,7 @@ export const BROWSER_TABS: AppTab[] = [
   },
   {
     id: 'portfolio',
-    label: 'Portfolio',
+    label: 'Tsing Liu',
     url: null,
     leaveTo: PORTFOLIO_URL,
     placeholder: 'Return to tsingliu.info',
